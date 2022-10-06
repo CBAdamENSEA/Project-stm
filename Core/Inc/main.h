@@ -71,8 +71,6 @@ void Error_Handler(void);
 #define ESP_RX_GPIO_Port GPIOA
 #define ESP_EN_Pin GPIO_PIN_4
 #define ESP_EN_GPIO_Port GPIOA
-#define ESP_STATE_Pin GPIO_PIN_5
-#define ESP_STATE_GPIO_Port GPIOA
 #define SERV_DATA_Pin GPIO_PIN_4
 #define SERV_DATA_GPIO_Port GPIOC
 #define TOF2_GPIO1_Pin GPIO_PIN_1
