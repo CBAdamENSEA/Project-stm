@@ -107,7 +107,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //test ssh 6
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
