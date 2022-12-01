@@ -5,7 +5,8 @@
  *      Author: cheik
  */
 
-#include "XL_320.h"
+#include "../Servo/XL_320.h"
+
 #include "main.h"
 
 
@@ -24,6 +25,7 @@ extern uint8_t Rx_char;
 char packet_msg[20];
 uint8_t RxBuffer[BUFFER_LENGTH];
 extern uint8_t Receive_length;
+uin8_t expected_packet_length=0;
 
 unsigned short crc_table[256] = {
 		0x0000, 0x8005, 0x800F, 0x000A, 0x801B, 0x001E, 0x0014, 0x8011,
@@ -135,9 +137,6 @@ void XL_320_send_packet(uint8_t id, XL320_instructions inst, uint8_t *params, ui
 	{
 		HAL_HalfDuplex_EnableReceiver(&huart1);
 		HAL_UART_Receive_IT(&huart1, buffer, Rx_packet_length);
-		//HAL_UART_Receive_IT(&huart6, &Rx_char, 1);
-
-		//printf("\r\nData transmitted successfully\r\n");
 	}
 	else
 	{
@@ -149,7 +148,8 @@ void XL_320_send_packet(uint8_t id, XL320_instructions inst, uint8_t *params, ui
 uint8_t XL_320_ping(uint8_t id,uint16_t *model_number,uint8_t *firmware_version)
 {
 	XL_320_clear_receive_buffer();
-	XL_320_send_packet(id, ping, NULL, 0,14);
+	expected_packet_length=14;
+	XL_320_send_packet(id, ping, NULL, 0,expected_packet_length);
 
 	uint8_t status_packet[64];
 	uint16_t status_packet_length;
@@ -203,8 +203,8 @@ void XL_320_write(uint8_t id, uint16_t address, uint8_t *data, uint16_t data_len
 	{
 		params[2 + i] = data[i];
 	}
-
-	XL_320_send_packet(id, write, params, params_length,11);
+	expected_packet_length=11;
+	XL_320_send_packet(id, write, params, params_length,expected_packet_length);
 }
 uint8_t XL_320_read(uint8_t id, uint16_t address, uint16_t data_length, uint8_t *return_data, uint16_t *return_data_length, uint8_t Rx_packet_length)
 {
@@ -252,9 +252,9 @@ uint16_t XL_320_read_present_position(uint8_t id)
 	uint16_t address = XL320_PRESENT_POSITION;
 	uint8_t return_data[2];
 	uint16_t return_data_length;
-	uint8_t packet_length=13;
+	expected_packet_length=13;
 
-	XL_320_read(id, address, 2, return_data, &return_data_length,packet_length);
+	XL_320_read(id, address, 2, return_data, &return_data_length,expected_packet_length);
 
 	uint16_t position = return_data[0] +
 			((return_data[1] << 8) & 0xFF00);
@@ -266,7 +266,6 @@ void XL_320_set_goal_position(uint8_t id, uint16_t position)
 	uint8_t data[2];
 	data[0] = (uint8_t)(position & 0xFF);
 	data[1] = (uint8_t)((position >> 8) & 0xFF);
-
 	XL_320_write(id, address, data, 2);
 }
 void XL_320_set_speed_position(uint8_t id, uint16_t speed)

@@ -28,8 +28,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
-#include "XL_320.h"
 #include "shell.h"
+
+#include "../../Drivers/Servo/XL_320.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
