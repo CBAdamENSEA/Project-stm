@@ -9,7 +9,9 @@
 #define INC_XL_320_H_
 
 
-#include "stdio.h"
+#include <stdio.h>
+#include <stdint.h>
+#include "cmsis_os.h"
 
 
 //// EEPROM
@@ -67,6 +69,13 @@
 #define XL320_115200 2
 #define XL320_1000000 3
 
+typedef struct{
+	uint8_t id;
+	uint8_t torque;
+	uint16_t position;
+	uint16_t speed;
+	SemaphoreHandle_t sem_packet_read; //in HAL_UART_RxCpltCallback
+} servo_t;
 
 #define BUFFER (buffer)
 #define BUFFER_INDEX (buffer_index)

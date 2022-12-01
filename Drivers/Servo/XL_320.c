@@ -5,7 +5,7 @@
  *      Author: cheik
  */
 
-#include "../Servo/XL_320.h"
+#include "XL_320.h"
 
 #include "main.h"
 
@@ -16,16 +16,12 @@
 extern UART_HandleTypeDef huart3;
 extern UART_HandleTypeDef huart1;
 
-extern uint8_t buffer[BUFFER_LENGTH];
-extern uint16_t buffer_index;
-extern uint8_t Rx_char;
+extern uint8_t buffer[BUFFER_LENGTH]; // into structure
+extern uint16_t buffer_index; // into structure
+uint8_t expected_packet_length=0; // into structure
 
+extern uint8_t Receive_length; // into structure
 
-
-char packet_msg[20];
-uint8_t RxBuffer[BUFFER_LENGTH];
-extern uint8_t Receive_length;
-uin8_t expected_packet_length=0;
 
 unsigned short crc_table[256] = {
 		0x0000, 0x8005, 0x800F, 0x000A, 0x801B, 0x001E, 0x0014, 0x8011,
@@ -227,10 +223,10 @@ uint8_t XL_320_read(uint8_t id, uint16_t address, uint16_t data_length, uint8_t 
 	while (XL_320_get_status_packet(status_packet, &status_packet_length)==0)
 	{
 		timeout--;
-				if (timeout==0)
-				{
-					return 0; /* Timeout. */
-				}
+		if (timeout==0)
+		{
+			return 0; /* Timeout. */
+		}
 	}
 
 	uint8_t id_r;
@@ -303,11 +299,11 @@ void XL_320_clear_receive_buffer(void)
 uint8_t XL_320_get_status_packet(uint8_t *packet, uint16_t *packet_length)
 {
 	if (buffer_index < 10) // minimum 10
-			{
+	{
 		/* Receive didn't complete. */
 		//printf("Receive didn't complete: buffer_index=%d\r\n",buffer_index);
 		return 0;
-			}
+	}
 
 	uint16_t packet_starting_index = 0;
 	uint8_t header_ok = 0;
