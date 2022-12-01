@@ -106,11 +106,13 @@ int statistiques(h_shell_t * h_shell,int argc, char ** argv)
 
 int open_gate(h_shell_t * h_shell,int argc, char ** argv)
 {
-	int position=350;
+	uint16_t position=350;
+	uint16_t final_position=0;
+	uint16_t error=5;
 	if (argc == 1)
 	{
-		XL_320_set_goal_position(0x01, 0);
-		while (abs(position-0)<5)
+		XL_320_set_goal_position(0x01, final_position);
+		while (abs(position-final_position)<error)
 		{
 			position=XL_320_read_present_position(0x01);
 		}
@@ -125,11 +127,13 @@ int open_gate(h_shell_t * h_shell,int argc, char ** argv)
 
 int close_gate(h_shell_t * h_shell,int argc, char ** argv)
 {
-	int position=0;
+	uint16_t position=0;
+	uint16_t final_position=350;
+	uint16_t error=5;
 	if (argc == 1)
 	{
-		XL_320_set_goal_position(0x01, 350);
-		while (abs(position-350)<5)
+		XL_320_set_goal_position(0x01, final_position);
+		while (abs(position-final_position)<error)
 		{
 			position=XL_320_read_present_position(0x01);
 		}
