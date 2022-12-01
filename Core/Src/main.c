@@ -29,6 +29,7 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "XL_320.h"
+#include "shell.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -38,6 +39,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define TASK_SHELL_STACK_DEPTH 512
+#define TASK_SHELL_PRIORITY 1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -48,9 +51,12 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+TaskHandle_t h_task_shell = NULL;
+h_shell_t h_shell;
 uint8_t buffer[BUFFER_LENGTH] = {0};
 uint16_t buffer_index = 0;
 uint8_t Receive_length=0;
+char Stat_buffer[250];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -63,6 +69,90 @@ void MX_FREERTOS_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+
+int fonction(h_shell_t * h_shell, int argc, char ** argv)
+{
+	printf("Je suis une fonction bidon\r\n");
+
+	printf("argc = %d\r\n", argc);
+
+	for (int i = 0 ; i < argc ; i++)
+	{
+		printf("arg %d = %s\r\n", i, argv[i]);
+	}
+
+	return 0;
+}
+
+int statistiques(h_shell_t * h_shell,int argc, char ** argv)
+{
+	if (argc == 1)
+	{
+		printf("Task            Abs Time        per Time\r\n");
+		vTaskGetRunTimeStats(Stat_buffer);
+		HAL_UART_Transmit(&huart3, (uint8_t*)Stat_buffer, strlen(Stat_buffer), HAL_MAX_DELAY);
+		printf("\r\nTask            State   Prior.  Stack   Num\r\n");
+		vTaskList(Stat_buffer);
+		HAL_UART_Transmit(&huart3, (uint8_t*)Stat_buffer, strlen(Stat_buffer), HAL_MAX_DELAY);
+
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
+
+int open_gate(h_shell_t * h_shell,int argc, char ** argv)
+{
+	int position=350;
+	if (argc == 1)
+	{
+		XL_320_set_goal_position(0x01, 0);
+		while (abs(position-0)<5)
+		{
+			position=XL_320_read_present_position(0x01);
+		}
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
+
+int close_gate(h_shell_t * h_shell,int argc, char ** argv)
+{
+	int position=0;
+	if (argc == 1)
+	{
+		XL_320_set_goal_position(0x01, 350);
+		while (abs(position-350)<5)
+		{
+			position=XL_320_read_present_position(0x01);
+		}
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
+
+
+
+void task_shell(void * unused)
+{
+	shell_init(&h_shell);
+	shell_add(&h_shell,'f', fonction, "Une fonction inutile");
+	shell_add(&h_shell,'s', statistiques, "Afficher les stat");
+	shell_add(&h_shell,'o', open_gate, "ouvrir la porte");
+	shell_add(&h_shell,'c', close_gate, "fermer la porte");
+	shell_run(&h_shell);	// boucle infinie
+}
 /* USER CODE END 0 */
 
 /**
@@ -81,7 +171,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+	h_shell.shell_func_list_size=0;
+	h_shell.sem_uart_read=NULL;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -104,6 +195,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_ADC1_Init();
   MX_TIM17_Init();
+  MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
 
 	uint16_t model_number=0;
@@ -119,6 +211,13 @@ int main(void)
 	XL_320_set_speed_position(0x01, 100);
 	HAL_Delay(100);
 	int position;
+	printf("Creating task shell\r\n");
+	if (xTaskCreate(task_shell, "Shell", TASK_SHELL_STACK_DEPTH, NULL, TASK_SHELL_PRIORITY, &h_task_shell) != pdPASS)
+	{
+		printf("Error creating task shell\r\n");
+		Error_Handler();
+	}
+	vTaskStartScheduler();
 
 
   /* USER CODE END 2 */
@@ -133,16 +232,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-//		XL_320_set_goal_position(0x01, 0);
-//		HAL_Delay(2000);
-//		position=XL_320_read_present_position(0x01);
-//		printf("Current position is %d \r\n",position);
-//		HAL_Delay(100);
-//		XL_320_set_goal_position(0x01, 350);
-//		HAL_Delay(2000);
-//		position=XL_320_read_present_position(0x01);
-//		printf("Current position is %d \r\n",position);
-//		HAL_Delay(100);
+		//		XL_320_set_goal_position(0x01, 0);
+		//		HAL_Delay(2000);
+		//		position=XL_320_read_present_position(0x01);
+		//		printf("Current position is %d \r\n",position);
+		//		HAL_Delay(100);
+		//		XL_320_set_goal_position(0x01, 350);
+		//		HAL_Delay(2000);
+		//		position=XL_320_read_present_position(0x01);
+		//		printf("Current position is %d \r\n",position);
+		//		HAL_Delay(100);
 
 
 		//HAL_GPIO_TogglePin(BAT_LED_GPIO_Port, BAT_LED_Pin);
@@ -201,7 +300,29 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	buffer_index=Receive_length;
+	if (huart->Instance == USART3)
+	{
+		shell_uart_receive_irq_cb(&h_shell);	// C'est la fonction qui donne le sémaphore!
+	}
+	else
+	{
+		buffer_index=Receive_length;
+	}
+}
+
+void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
+{
+	printf("Stack Overflow\r\n"); // pile éclaté, pas de printf
+	Error_Handler();
+}
+
+void configureTimerForRunTimeStats(void)
+{
+	HAL_TIM_Base_Start(&htim7);
+}
+unsigned long getRunTimeCounterValue(void)
+{
+	return htim7.Instance->CNT;
 }
 /* USER CODE END 4 */
 
