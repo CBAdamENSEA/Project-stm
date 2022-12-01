@@ -114,7 +114,7 @@ int main(void)
 	}
 	XL_320_set_torque_enable(0x01, 1);
 	HAL_Delay(100);
-	XL_320_set_speed_position(0x01, 300);
+	XL_320_set_speed_position(0x01, 100);
 	HAL_Delay(100);
 	int position;
 
@@ -130,7 +130,7 @@ int main(void)
 //		position=XL_320_read_present_position(0x01);
 //		printf("Current position is %d \r\n",position);
 //		HAL_Delay(100);
-//		XL_320_set_goal_position(0x01, 512);
+//		XL_320_set_goal_position(0x01, 350);
 //		HAL_Delay(2000);
 //		position=XL_320_read_present_position(0x01);
 //		printf("Current position is %d \r\n",position);
