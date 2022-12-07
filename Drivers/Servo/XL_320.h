@@ -69,13 +69,7 @@
 #define XL320_115200 2
 #define XL320_1000000 3
 
-typedef struct{
-	uint8_t id;
-	uint8_t torque;
-	uint16_t position;
-	uint16_t speed;
-	SemaphoreHandle_t sem_packet_read; //in HAL_UART_RxCpltCallback
-} servo_t;
+
 
 #define BUFFER (buffer)
 #define BUFFER_INDEX (buffer_index)
@@ -116,27 +110,36 @@ typedef enum
 } XL320_instructions;
 
 
+typedef struct{
+	uint8_t id;
+	uint8_t torque;
+	uint16_t position;
+	uint16_t speed;
+	SemaphoreHandle_t sem_packet_read; //in HAL_UART_RxCpltCallback
+} servo_t;
+
+
 //// Functions
 
 uint16_t XL_320_CRC(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
 void XL_320_Display_Packet(uint8_t * packet,uint8_t size);
 
-void XL_320_send_packet(uint8_t id, XL320_instructions inst, uint8_t *params, uint16_t params_length, uint8_t Rx_packet_length);
+void XL_320_send_packet(servo_t * servo,uint8_t id, XL320_instructions inst, uint8_t *params, uint16_t params_length, uint8_t Rx_packet_length);
 
-uint8_t XL_320_ping(uint8_t id,uint16_t *model_number,uint8_t *firmware_version);
-void XL_320_write(uint8_t id, uint16_t address, uint8_t *data, uint16_t data_length);
-uint8_t XL_320_read(uint8_t id, uint16_t address, uint16_t data_length, uint8_t *return_data, uint16_t *return_data_length,uint8_t Rx_packet_length);
+uint8_t XL_320_ping(servo_t* servo,uint8_t id,uint16_t *model_number,uint8_t *firmware_version);
+uint8_t XL_320_write(servo_t* servo,uint8_t id, uint16_t address, uint8_t *data, uint16_t data_length);
+uint8_t XL_320_read(servo_t* servo,uint8_t id, uint16_t address, uint16_t data_length, uint8_t *return_data, uint16_t *return_data_length,uint8_t Rx_packet_length);
 
-uint16_t XL_320_read_present_position(uint8_t id);
-void XL_320_set_goal_position(uint8_t id, uint16_t position);
-void XL_320_set_speed_position(uint8_t id, uint16_t speed);
-void XL_320_set_torque_enable(uint8_t id, uint8_t enable);
-void XL_320_set_baudrate(uint8_t id, uint8_t br);
+uint16_t XL_320_read_present_position(servo_t* servo,uint8_t id);
+uint8_t XL_320_set_goal_position(servo_t* servo,uint8_t id, uint16_t position);
+uint8_t XL_320_set_speed_position(servo_t* servo,uint8_t id, uint16_t speed);
+uint8_t XL_320_set_torque_enable(servo_t* servo,uint8_t id, uint8_t enable);
+uint8_t XL_320_set_baudrate(servo_t* servo,uint8_t id, uint8_t br);
 
 void XL_320_clear_receive_buffer(void);
-uint8_t XL_320_get_status_packet(uint8_t *packet, uint16_t *packet_length);
+uint8_t XL_320_get_status_packet(servo_t* servo,uint8_t *packet, uint16_t *packet_length);
 uint8_t XL_320_parse_status_packet(uint8_t *packet, uint32_t packet_length, uint8_t *id, uint8_t *params, uint16_t *params_length, uint8_t *error, uint8_t *crc_check);
-
+uint8_t init_servo(servo_t* servo);
 
 
 
