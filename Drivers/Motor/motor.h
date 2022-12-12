@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include "tim.h"
 
+
 #define RESOLUTION 1023
 
 typedef uint8_t (* drv_avance_t)(uint16_t alpha);// pointeur sur fonction
@@ -49,10 +50,28 @@ typedef struct{
 
 } motors_t;
 
+typedef struct{
 
+	int32_t nbr_ticks;
 
-uint8_t turn_motor(motors_t * motors,uint16_t alpha, Motor_direction direction);
-uint8_t stop_motor();
+} encoder_t;
+
+typedef struct{
+
+	encoder_t right;
+	encoder_t left;
+
+} encoders_t;
+
+uint8_t avance_r(uint16_t alpha);// alpha de 0 à 1023
+uint8_t recule_r(uint16_t alpha);
+uint8_t stop_r();
+uint8_t avance_l(uint16_t alpha);
+uint8_t recule_l(uint16_t alpha);
+uint8_t stop_l();
+uint8_t init_motors(motors_t * motors);
+uint8_t init_encoders(encoders_t * encoders);
+uint8_t get_ticks(encoders_t * encoders);
 
 
 

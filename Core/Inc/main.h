@@ -119,6 +119,8 @@ void Error_Handler(void);
 #define CLR_S3_GPIO_Port GPIOD
 #define CLR_OE_Pin GPIO_PIN_6
 #define CLR_OE_GPIO_Port GPIOD
+#define CLR_LED_Pin GPIO_PIN_4
+#define CLR_LED_GPIO_Port GPIOB
 #define DRV_2_REV_Pin GPIO_PIN_6
 #define DRV_2_REV_GPIO_Port GPIOB
 #define TOF1_SDA_Pin GPIO_PIN_7

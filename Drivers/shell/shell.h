@@ -49,9 +49,9 @@ typedef struct{
 
 
 void shell_init();
-int shell_add(h_shell_t *,char c, int (* pfunc)(int argc, char ** argv), char * description);
-int shell_run(h_shell_t *);
+int shell_add(h_shell_t * h_shell,char c, int (* pfunc)(int argc, char ** argv), char * description);
+int shell_run(h_shell_t * h_shell);
 // commentaire documentation!
-void shell_uart_receive_irq_cb(h_shell_t *);
+void shell_uart_receive_irq_cb(h_shell_t * h_shell);
 
 #endif /* INC_LIB_SHELL_SHELL_H_ */

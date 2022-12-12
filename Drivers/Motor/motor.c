@@ -10,9 +10,11 @@
 
 extern TIM_HandleTypeDef htim15;
 extern TIM_HandleTypeDef htim16;
+extern TIM_HandleTypeDef htim1;
+extern TIM_HandleTypeDef htim3;
 
 
-uint8_t avance_r(uint16_t alpha)// alpha de 0 à 1023
+uint8_t recule_r(uint16_t alpha)// alpha de 0 à 1023
 {
 	htim15.Instance->CCR1=alpha;
 	if(HAL_TIMEx_PWMN_Stop(&htim15, TIM_CHANNEL_1)==HAL_OK)
@@ -26,7 +28,7 @@ uint8_t avance_r(uint16_t alpha)// alpha de 0 à 1023
 	}
 	return 0;
 }
-uint8_t recule_r(uint16_t alpha)// alpha de 0 à 1023
+uint8_t avance_r(uint16_t alpha)// alpha de 0 à 1023
 {
 	htim15.Instance->CCR1=alpha;
 	if(HAL_TIM_PWM_Stop(&htim15, TIM_CHANNEL_1)==HAL_OK)
@@ -112,34 +114,32 @@ uint8_t init_motors(motors_t * motors)
 	return 1;
 }
 
-
-uint8_t turn_motor(motors_t * motors,uint16_t alpha, Motor_direction direction)
+uint8_t init_encoders(encoders_t * encoders)
 {
-	htim15.Instance->CCR1=RESOLUTION*alpha/100;
-	if (direction==Forward)
+	encoders->left.nbr_ticks=0;
+	encoders->right.nbr_ticks=0;
+	if(HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL)!=HAL_OK)
 	{
-
-		HAL_TIMEx_PWMN_Stop(&htim15, TIM_CHANNEL_1);
-		HAL_TIM_PWM_Start(&htim15, TIM_CHANNEL_1);
+		printf("Right encoder did not start\r\n");
 	}
-	else
+	if (HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL)!=HAL_OK)
 	{
-		HAL_TIM_PWM_Stop(&htim15, TIM_CHANNEL_1);
-		HAL_TIMEx_PWMN_Start(&htim15, TIM_CHANNEL_1);
+		printf("Left encoder did not start\r\n");
 	}
-
-
 	return 1;
 }
-uint8_t stop_motor()
+
+uint8_t get_ticks(encoders_t * encoders)
 {
-
-	HAL_TIM_PWM_Stop(&htim15, TIM_CHANNEL_1);
-	HAL_TIMEx_PWMN_Stop(&htim15, TIM_CHANNEL_1);
-
-
+	encoders->left.nbr_ticks=__HAL_TIM_GET_COUNTER(&htim1);
+	encoders->right.nbr_ticks=__HAL_TIM_GET_COUNTER(&htim3);
+	htim1.Instance->CNT=0;
+	htim3.Instance->CNT=0;
 	return 1;
 }
+
+
+
 
 
 

@@ -28,9 +28,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "stdlib.h"
 #include "shell.h"
 #include "motor.h"
 #include <string.h>
+#include "TCS3200.h"
 
 #include "../../Drivers/Servo/XL_320.h"
 /* USER CODE END Includes */
@@ -46,6 +48,10 @@
 #define TASK_SHELL_PRIORITY 1
 #define TASK_ENCODER_STACK_DEPTH 512
 #define TASK_ENCODER_PRIORITY 1
+#define TASK_COLOR_STACK_DEPTH 512
+#define TASK_COLOR_PRIORITY 3
+#define ENCODER_TICKS 3412
+#define TS 5
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -57,6 +63,8 @@
 
 /* USER CODE BEGIN PV */
 TaskHandle_t h_task_shell = NULL;
+TaskHandle_t h_task_encoder = NULL;
+TaskHandle_t h_task_color = NULL;
 h_shell_t h_shell;
 uint8_t buffer[BUFFER_LENGTH] = {0};
 uint16_t buffer_index = 0;
@@ -66,6 +74,8 @@ servo_t servo;
 motors_t motors;
 uint32_t cnt_encoder1;
 uint32_t cnt_encoder2;
+encoders_t encoders;
+color_sensor_t color_sensor;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,6 +103,7 @@ int fonction(h_shell_t * h_shell, int argc, char ** argv)
 	return 0;
 }
 
+
 int motor(h_shell_t * h_shell,int argc, char ** argv)
 {
 	if (argc == 4)
@@ -102,18 +113,14 @@ int motor(h_shell_t * h_shell,int argc, char ** argv)
 		{
 			if(strncmp(argv[2],"f",1)==0)
 			{
-
-				//printf('Going forward\r\n');
 				motors.right.drv_motor.drv_avance(alpha);
 			}
 			else if(strncmp(argv[2],"b",1)==0)
 			{
-				//printf('Going backward\r\n');
 				motors.right.drv_motor.drv_recule(alpha);
 			}
 			else
 			{
-				//printf('Stopping\r\n');
 				motors.right.drv_motor.drv_stop();
 			}
 		}
@@ -121,21 +128,79 @@ int motor(h_shell_t * h_shell,int argc, char ** argv)
 		{
 			if(strncmp(argv[2],"f",1)==0)
 			{
-
-				//printf('Going forward\r\n');
 				motors.left.drv_motor.drv_avance(alpha);
 			}
 			else if(strncmp(argv[2],"b",1)==0)
 			{
-				//printf('Going backward\r\n');
 				motors.left.drv_motor.drv_recule(alpha);
 			}
 			else
 			{
-				//printf('Stopping\r\n');
 				motors.left.drv_motor.drv_stop();
 			}
 		}
+		if(strncmp(argv[1],"b",1)==0)
+		{
+			if(strncmp(argv[2],"f",1)==0)
+			{
+				motors.left.drv_motor.drv_avance(alpha);
+				motors.right.drv_motor.drv_avance(alpha);
+			}
+			else if(strncmp(argv[2],"b",1)==0)
+			{
+				motors.left.drv_motor.drv_recule(alpha);
+				motors.right.drv_motor.drv_recule(alpha);
+			}
+			else
+			{
+				motors.left.drv_motor.drv_stop();
+				motors.right.drv_motor.drv_stop();
+			}
+		}
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
+int speed(h_shell_t * h_shell,int argc, char ** argv)
+{
+	if (argc == 1)
+	{
+		printf("Right motor speed is %d\r\n",encoders.right.nbr_ticks);
+		printf("Left motor speed is %d\r\n",encoders.left.nbr_ticks);
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
+
+int couleurs(h_shell_t * h_shell,int argc, char ** argv)
+{
+	if (argc == 1)
+	{
+		//		if(TCS3200_Read_Color(&color_sensor,FILTER_GREEN))
+		//		{
+		//			//printf("red color is : %d\r\n", color_sensor.red);
+		//		}
+		//		vTaskDelay(200);
+		//		if(TCS3200_Read_Color(&color_sensor,FILTER_RED))
+		//		{
+		//			//printf("red color is : %d\r\n", color_sensor.red);
+		//		}
+		//		vTaskDelay(200);
+		//		if(TCS3200_Read_Color(&color_sensor,FILTER_BLUE))
+		//		{
+		//			//printf("red color is : %d\r\n", color_sensor.red);
+		//		}
+		//		vTaskDelay(200);
+		//		TCS3200_Detected_Color(color_sensor);
+		xSemaphoreGive(color_sensor.sem_color_read);
 		return 0;
 	}
 	else
@@ -207,7 +272,22 @@ int close_gate(h_shell_t * h_shell,int argc, char ** argv)
 	}
 }
 
-
+void task_color(void * unused)
+{
+	if (TCS3200_Init(&color_sensor))
+	{
+		printf("Color sensor initialized\r\n");
+	}
+	while(1)
+	{
+		xSemaphoreTake(color_sensor.sem_color_read, portMAX_DELAY);
+		if(TCS3200_Read_Color(&color_sensor,FILTER_RED))
+		{
+			//printf("red color is : %d\r\n", color_sensor.red);
+		}
+		TCS3200_Detected_Color(&color_sensor);
+	}
+}
 
 void task_shell(void * unused)
 {
@@ -220,23 +300,28 @@ void task_shell(void * unused)
 	{
 		printf("motors initialized\r\n");
 	}
-	shell_add(&h_shell,'f', fonction, "Une fonction inutile");
+	//	if (TCS3200_Init(&color_sensor))
+	//	{
+	//		printf("Color sensor initialized\r\n");
+	//	}
+	shell_add(&h_shell,'f', fonction, (char *)"Une fonction inutile");
 	shell_add(&h_shell,'s', statistiques, "Afficher les stat");
 	shell_add(&h_shell,'o', open_gate, "ouvrir la porte");
 	shell_add(&h_shell,'c', close_gate, "fermer la porte");
 	shell_add(&h_shell,'m', motor, "tourner les moteurs");
+	shell_add(&h_shell,'e', speed, "vitesse des moteurs");
+	shell_add(&h_shell,'r', couleurs, "couleur de la canette");
 	shell_run(&h_shell);	// boucle infinie
 }
 void task_encoder(void * unused)
 {
-	HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL);
-	HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
+	if (init_encoders(&encoders))
+	{
+		printf("Encoders Initialized\r\n");
+	}
 	while (1)
 	{
-		cnt_encoder1=__HAL_TIM_GET_COUNTER(&htim1);
-		cnt_encoder2=__HAL_TIM_GET_COUNTER(&htim2);
-		htim1.Instance->CNT=0;
-		htim2.Instance->CNT=0;
+		get_ticks(&encoders);
 		vTaskDelay(5);
 	}
 }
@@ -261,6 +346,7 @@ int main(void)
 	h_shell.shell_func_list_size=0;
 	h_shell.sem_uart_read=NULL;
 	servo.sem_packet_read=NULL;
+	color_sensor.sem_color_read=NULL;
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
@@ -316,11 +402,16 @@ int main(void)
 		printf("Error creating task shell\r\n");
 		Error_Handler();
 	}
-	if (xTaskCreate(task_encoder, "Encoder", TASK_ENCODER_STACK_DEPTH, NULL, TASK_ENCODER_PRIORITY, &h_task_shell) != pdPASS)
-		{
-			printf("Error creating task shell\r\n");
-			Error_Handler();
-		}
+	if (xTaskCreate(task_encoder, "Encoder", TASK_ENCODER_STACK_DEPTH, NULL, TASK_ENCODER_PRIORITY, &h_task_encoder) != pdPASS)
+	{
+		printf("Error creating task shell\r\n");
+		Error_Handler();
+	}
+	if (xTaskCreate(task_color, "Color", TASK_COLOR_STACK_DEPTH, NULL, TASK_COLOR_PRIORITY, &h_task_color) != pdPASS)
+	{
+		printf("Error creating task color\r\n");
+		Error_Handler();
+	}
 	vTaskStartScheduler();
 
 
@@ -402,6 +493,16 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance == TIM17)
+	{
+		TCS3200_CaptureCallback(&color_sensor);
+	}
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if (huart->Instance == USART3)
@@ -446,6 +547,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	/* USER CODE BEGIN Callback 0 */
 
+	if (htim->Instance == TIM17)
+	{
+		TCS3200_PeriodElapsedCallback(&color_sensor);
+	}
 	/* USER CODE END Callback 0 */
 	if (htim->Instance == TIM6) {
 		HAL_IncTick();
