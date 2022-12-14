@@ -109,6 +109,7 @@ int motor(h_shell_t * h_shell,int argc, char ** argv)
 	if (argc == 4)
 	{
 		uint16_t alpha=atoi(argv[3]);
+
 		if(strncmp(argv[1],"r",1)==0)
 		{
 			if(strncmp(argv[2],"f",1)==0)
@@ -165,12 +166,19 @@ int motor(h_shell_t * h_shell,int argc, char ** argv)
 		return -1;
 	}
 }
+
 int speed(h_shell_t * h_shell,int argc, char ** argv)
 {
 	if (argc == 1)
 	{
-		printf("Right motor speed is %d\r\n",encoders.right.nbr_ticks);
-		printf("Left motor speed is %d\r\n",encoders.left.nbr_ticks);
+		printf("R Ticks = %d\r\n",encoders.right.nbr_ticks);
+		printf("L Ticks = %d\r\n",encoders.left.nbr_ticks);
+
+		printf("R speed = %d Rpm\r\n",encoders.right.speed);
+		printf("L speed = %d Rpm\r\n",encoders.left.speed);
+
+		printf("R distance = %d mm\r\n",encoders.right.distance);
+		printf("L distance = %d mm\r\n",encoders.left.distance);
 		return 0;
 	}
 	else
@@ -184,23 +192,9 @@ int couleurs(h_shell_t * h_shell,int argc, char ** argv)
 {
 	if (argc == 1)
 	{
-		//		if(TCS3200_Read_Color(&color_sensor,FILTER_GREEN))
-		//		{
-		//			//printf("red color is : %d\r\n", color_sensor.red);
-		//		}
-		//		vTaskDelay(200);
-		//		if(TCS3200_Read_Color(&color_sensor,FILTER_RED))
-		//		{
-		//			//printf("red color is : %d\r\n", color_sensor.red);
-		//		}
-		//		vTaskDelay(200);
-		//		if(TCS3200_Read_Color(&color_sensor,FILTER_BLUE))
-		//		{
-		//			//printf("red color is : %d\r\n", color_sensor.red);
-		//		}
-		//		vTaskDelay(200);
-		//		TCS3200_Detected_Color(color_sensor);
+
 		xSemaphoreGive(color_sensor.sem_color_read);
+		TCS3200_Detected_Color(&color_sensor);
 		return 0;
 	}
 	else
@@ -285,7 +279,7 @@ void task_color(void * unused)
 		{
 			//printf("red color is : %d\r\n", color_sensor.red);
 		}
-		TCS3200_Detected_Color(&color_sensor);
+		//TCS3200_Detected_Color(&color_sensor);
 	}
 }
 
@@ -362,7 +356,6 @@ int main(void)
 	MX_I2C2_Init();
 	MX_TIM1_Init();
 	MX_TIM3_Init();
-	MX_TIM16_Init();
 	MX_USART1_UART_Init();
 	MX_USART2_UART_Init();
 	MX_TIM15_Init();
@@ -370,6 +363,7 @@ int main(void)
 	MX_ADC1_Init();
 	MX_TIM17_Init();
 	MX_TIM7_Init();
+	MX_TIM16_Init();
 	/* USER CODE BEGIN 2 */
 
 	//	uint16_t model_number=0;

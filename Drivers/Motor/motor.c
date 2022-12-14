@@ -117,7 +117,20 @@ uint8_t init_motors(motors_t * motors)
 uint8_t init_encoders(encoders_t * encoders)
 {
 	encoders->left.nbr_ticks=0;
-	encoders->right.nbr_ticks=0;
+	encoders->left.nbr_ticks=0;
+	encoders->left.error=0;
+	encoders->right.error=0;
+	encoders->left.sum_erreur=0;
+	encoders->right.sum_erreur=0;
+	encoders->left.new_command=0;
+	encoders->right.new_command=0;
+	encoders->left.consigne=0;
+	encoders->right.consigne=0;
+	encoders->left.speed=0;
+	encoders->right.speed=0;
+	encoders->left.distance=0;
+	encoders->right.distance=0;
+
 	if(HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL)!=HAL_OK)
 	{
 		printf("Right encoder did not start\r\n");
@@ -129,12 +142,52 @@ uint8_t init_encoders(encoders_t * encoders)
 	return 1;
 }
 
+
+
 uint8_t get_ticks(encoders_t * encoders)
 {
 	encoders->left.nbr_ticks=__HAL_TIM_GET_COUNTER(&htim1);
 	encoders->right.nbr_ticks=__HAL_TIM_GET_COUNTER(&htim3);
 	htim1.Instance->CNT=0;
 	htim3.Instance->CNT=0;
+
+
+	encoders->left.error=encoders->left.consigne-encoders->left.nbr_ticks;
+	encoders->right.error=encoders->right.consigne-encoders->right.nbr_ticks;
+
+	encoders->left.sum_erreur+=encoders->left.error;
+	encoders->right.sum_erreur+=encoders->right.error;
+
+	encoders->left.new_command=(KP*encoders->left.error)+(encoders->left.sum_erreur/KI);
+	if (encoders->left.new_command<0)
+	{
+		encoders->left.new_command=0;
+	}
+	if (encoders->left.new_command>853)
+	{
+		encoders->left.new_command=853;
+	}
+	if (encoders->right.new_command<0)
+	{
+		encoders->right.new_command=0;
+	}
+	if (encoders->right.new_command>853)
+	{
+		encoders->right.new_command=853;
+	}
+
+	encoders->left.speed=encoders->left.nbr_ticks*10*TS_TO_MIN/(ENC_RESOLUTION);
+	encoders->right.speed=encoders->right.nbr_ticks*10*TS_TO_MIN/(ENC_RESOLUTION);
+
+	encoders->left.distance+=encoders->left.nbr_ticks*10*ROUE/(ENC_RESOLUTION);
+	encoders->right.distance+=encoders->right.nbr_ticks*10*ROUE/(ENC_RESOLUTION);
+
+
+
+
+
+
+
 	return 1;
 }
 

@@ -59,7 +59,7 @@ static int sh_help(h_shell_t *h_shell,int argc, char ** argv) {
 void shell_init(h_shell_t *h_shell) {
 	int size = 0;
 
-	size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "\r\n\r\n===== Monsieur Shell v0.2 =====\r\n");
+	size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "\r\n\r\n== Démonstration Robot CARY ==\r\n");
 	uart_write(h_shell->print_buffer, size);
 
 	h_shell->sem_uart_read = xSemaphoreCreateBinary();

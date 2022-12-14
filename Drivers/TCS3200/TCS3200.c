@@ -208,7 +208,7 @@ uint8_t TCS3200_Read_Color(color_sensor_t * color_sensor,TCS3200_filter_t filter
 	{
 		return 0;
 	}
-	vTaskDelay(100); // A changer
+	//vTaskDelay(100); // A changer
 	// ajouter un sémaphore au lieu de la variable input_freq_start
 	color_sensor->drv_input_capture.input_freq_start=1; //So that the input capture timer can start calculating the frequency
 	while(color_sensor->drv_input_capture.input_freq_start); // Wait until the frequency is calculated
@@ -242,6 +242,7 @@ uint8_t TCS3200_Read_Color(color_sensor_t * color_sensor,TCS3200_filter_t filter
 		color_sensor->blue=color_sensor->drv_input_capture.freq;
 		break;
 	}
+
 
 
 	return 1;

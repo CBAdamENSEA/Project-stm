@@ -73,6 +73,8 @@ void Error_Handler(void);
 #define ESP_RX_GPIO_Port GPIOA
 #define ESP_EN_Pin GPIO_PIN_4
 #define ESP_EN_GPIO_Port GPIOA
+#define DRV_2_FWD_Pin GPIO_PIN_6
+#define DRV_2_FWD_GPIO_Port GPIOA
 #define SERV_DATA_Pin GPIO_PIN_4
 #define SERV_DATA_GPIO_Port GPIOC
 #define TOF2_GPIO1_Pin GPIO_PIN_1
@@ -105,8 +107,6 @@ void Error_Handler(void);
 #define SYS_SWCLK_GPIO_Port GPIOA
 #define OPTQ2_Pin GPIO_PIN_15
 #define OPTQ2_GPIO_Port GPIOA
-#define DRV_2_FWD_Pin GPIO_PIN_0
-#define DRV_2_FWD_GPIO_Port GPIOD
 #define CLR_OUT_Pin GPIO_PIN_1
 #define CLR_OUT_GPIO_Port GPIOD
 #define CLR_S0_Pin GPIO_PIN_2
