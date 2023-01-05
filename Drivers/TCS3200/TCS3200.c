@@ -242,6 +242,10 @@ uint8_t TCS3200_Read_Color(color_sensor_t * color_sensor,TCS3200_filter_t filter
 		color_sensor->blue=color_sensor->drv_input_capture.freq;
 		break;
 	}
+	if (TCS3200_Set_Filter(FILTER_CLEAR)==0)
+	{
+		return 0;
+	}
 
 
 

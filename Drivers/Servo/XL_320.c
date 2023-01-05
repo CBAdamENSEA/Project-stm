@@ -450,23 +450,25 @@ uint8_t init_servo(servo_t* servo)
 	}
 	if(XL_320_ping(servo, 0x01,&model_number,&firmware_version)==1)
 	{
-		printf("Servo is detected\r\n");
-		printf("model_number= 0x%04x \r\n", model_number);
-		printf("firmware_version= 0x%04x \r\n", firmware_version);
+		//printf("Servo is detected\r\n");
+		//printf("model_number= 0x%04x \r\n", model_number);
+		//printf("firmware_version= 0x%04x \r\n", firmware_version);
 		if (XL_320_set_torque_enable(servo, 0x01, servo->torque))
 		{
-			printf("torque enabled\r\n");
+			//printf("torque enabled\r\n");
 			if (XL_320_set_speed_position(servo,0x01, servo->speed))
 			{
-				printf ("speed position = 100\r\n");
+				//printf ("speed position = 100\r\n");
 				if (XL_320_set_goal_position(servo, 0x01, servo->position))
 				{
-					printf ("initial position = 350\r\n");
+					//printf ("initial position = 350\r\n");
+					printf("Servo motor is initialized\r\n");
 					return 1;
 				}
 			}
 		}
 	}
+
 
 	return 0;
 }

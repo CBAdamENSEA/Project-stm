@@ -10,12 +10,13 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "tim.h"
 
 
 #define RESOLUTION 1023
-#define KI 3
-#define KP 15
+#define KI 1
+#define KP 25
 #define ENC_RESOLUTION 3412*4
 #define TS_TO_MIN 12000
 #define DIAMETER 46
@@ -66,6 +67,7 @@ typedef struct{
 	int32_t sum_erreur;
 	int32_t delta_erreur; // à voir
 	int32_t new_command;
+	int32_t old_command;
 	int32_t consigne;
 
 
