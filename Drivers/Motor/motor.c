@@ -132,6 +132,10 @@ uint8_t init_encoders(encoders_t * encoders)
 	encoders->right.speed=0;
 	encoders->left.distance=0;
 	encoders->right.distance=0;
+	encoders->left.consigne_distance=0;
+	encoders->right.consigne_distance=0;
+	encoders->left.consigne_angle=0;
+	encoders->right.consigne_angle=0;
 
 	if(HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL)!=HAL_OK)
 	{
@@ -150,12 +154,12 @@ uint8_t get_ticks(encoders_t * encoders)
 {
 	encoders->left.nbr_ticks=-__HAL_TIM_GET_COUNTER(&htim3);
 	encoders->right.nbr_ticks=__HAL_TIM_GET_COUNTER(&htim1);
-	htim1.Instance->CNT=0;
+	htim1.Instance->CNT=0; // garder le cnt et faire le calcul de la différence
 	htim3.Instance->CNT=0;
-
+	// change 10*TS_TO_MIN/(ENC_RESOLUTION) to a constant
 	encoders->left.speed=encoders->left.nbr_ticks*10*TS_TO_MIN/(ENC_RESOLUTION);
 	encoders->right.speed=encoders->right.nbr_ticks*10*TS_TO_MIN/(ENC_RESOLUTION);
-
+	// séparer les calculs d'odométrie
 	encoders->left.distance+=encoders->left.nbr_ticks*10*ROUE/(ENC_RESOLUTION);
 	encoders->right.distance+=encoders->right.nbr_ticks*10*ROUE/(ENC_RESOLUTION);
 
@@ -167,26 +171,61 @@ uint8_t get_ticks(encoders_t * encoders)
 	if (abs(encoders->left.error)<700)
 		encoders->left.sum_erreur+=encoders->left.error;
 	if (abs(encoders->right.error)<700)
-		encoders->right.sum_erreur+=encoders->right.error;
+		encoders->right.sum_erreur+=(encoders->right.error);
 
-	encoders->left.new_command=(KP*encoders->left.error)+(encoders->left.sum_erreur*KI);
-	encoders->right.new_command=(KP*encoders->left.error)+(encoders->left.sum_erreur*KI);
+	if (encoders->left.consigne==0)
+		encoders->left.sum_erreur=0;
+	if (encoders->right.consigne==0)
+		encoders->right.sum_erreur=0;
 
-	if (encoders->left.new_command<-853)
-		encoders->left.new_command=-853;
-	if (encoders->left.new_command>853)
-		encoders->left.new_command=853;
-	if (encoders->right.new_command<-853)
-		encoders->right.new_command=-853;
-	if (encoders->right.new_command>853)
-		encoders->right.new_command=853;
+	encoders->left.new_command+=(((encoders->left.error*KP)+(encoders->left.sum_erreur*KI))/10000);
+	encoders->right.new_command+=(((encoders->left.error*KP)+(encoders->left.sum_erreur*KI))/10000);
 
-	if (encoders->left.old_command<abs(encoders->left.new_command))
-		encoders->left.old_command+=16;
-	else encoders->left.old_command=abs(encoders->left.new_command);
-	if (encoders->right.old_command<abs(encoders->right.new_command))
-		encoders->right.old_command+=16;
-	else encoders->right.old_command=abs(encoders->right.new_command);
+
+
+	if (encoders->left.new_command<0)
+	{
+		if (encoders->left.new_command<-853)
+			encoders->left.new_command=-853;
+		if (encoders->left.new_command>-30)
+			encoders->left.new_command=-30;
+	}
+	else
+	{
+		if (encoders->left.new_command>853)
+			encoders->left.new_command=853;
+		if (encoders->left.new_command<30)
+			encoders->left.new_command=30;
+	}
+	if (encoders->right.new_command<0)
+	{
+		if (encoders->right.new_command<-853)
+			encoders->right.new_command=-853;
+		if (encoders->right.new_command>-30)
+			encoders->right.new_command=-30;
+	}
+	else
+	{
+		if (encoders->right.new_command>853)
+			encoders->right.new_command=853;
+		if (encoders->right.new_command<30)
+			encoders->right.new_command=30;
+	}
+
+
+	if (encoders->left.consigne==0)
+		encoders->left.new_command=0;
+	if (encoders->right.consigne==0)
+		encoders->right.new_command=0;
+
+	//	if (encoders->left.old_command<abs(encoders->left.new_command))
+	//		encoders->left.old_command+=2;//16
+	//	else encoders->left.old_command=abs(encoders->left.new_command);
+	//	if (encoders->right.old_command<abs(encoders->right.new_command))
+	//		encoders->right.old_command+=2; //24
+	//	else encoders->right.old_command=abs(encoders->right.new_command);
+	encoders->left.old_command=abs(encoders->left.new_command);
+	encoders->right.old_command=abs(encoders->right.new_command);
 
 
 	if (encoders->right.new_command>0)

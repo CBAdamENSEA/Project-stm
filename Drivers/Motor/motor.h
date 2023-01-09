@@ -15,13 +15,14 @@
 
 
 #define RESOLUTION 1023
-#define KI 1
-#define KP 25
+#define KI 0.1
+#define KP 1000
 #define ENC_RESOLUTION 3412*4
-#define TS_TO_MIN 12000
+#define TS_TO_MIN 1200
 #define DIAMETER 46
 #define ROUE 144
 #define ENTRAXE 167
+
 
 typedef uint8_t (* drv_avance_t)(uint16_t alpha);// pointeur sur fonction
 typedef uint8_t (* drv_recule_t)(uint16_t alpha);
@@ -69,6 +70,8 @@ typedef struct{
 	int32_t new_command;
 	int32_t old_command;
 	int32_t consigne;
+	int32_t consigne_distance;
+	int32_t consigne_angle;
 
 
 } encoder_t;
