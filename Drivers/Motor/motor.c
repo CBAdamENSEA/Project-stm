@@ -13,6 +13,7 @@ extern TIM_HandleTypeDef htim16;
 extern TIM_HandleTypeDef htim1;
 extern TIM_HandleTypeDef htim3;
 
+int32_t left_dist=0;
 
 uint8_t recule_r(uint16_t alpha)// alpha de 0 à 1023
 {
@@ -136,6 +137,19 @@ uint8_t init_encoders(encoders_t * encoders)
 	encoders->right.consigne_distance=0;
 	encoders->left.consigne_angle=0;
 	encoders->right.consigne_angle=0;
+	encoders->angle=0; // angle initiale du robot dans le repère de la table
+	encoders->distance=0;
+	encoders->theta=0;
+	encoders->x=0; // position initiale du robot dans le repère de la table
+	encoders->y=0; // position initiale du robot dans le repère de la table
+	encoders->ddelta=0;
+	encoders->dalpha=0;
+	encoders->dl=0;
+	encoders->dr=0;
+	encoders->right.nbr_ticks_odom=0;
+	encoders->left.nbr_ticks_odom=0;
+	encoders->distance_done=1;
+	encoders->angle_done=1;
 
 	if(HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL)!=HAL_OK)
 	{
@@ -152,16 +166,20 @@ uint8_t init_encoders(encoders_t * encoders)
 
 uint8_t get_ticks(encoders_t * encoders)
 {
-	encoders->left.nbr_ticks=-__HAL_TIM_GET_COUNTER(&htim3);
-	encoders->right.nbr_ticks=__HAL_TIM_GET_COUNTER(&htim1);
+	encoders->left.nbr_ticks+=(int16_t)(-__HAL_TIM_GET_COUNTER(&htim3));
+	encoders->right.nbr_ticks+=(int16_t)(__HAL_TIM_GET_COUNTER(&htim1));
+
 	htim1.Instance->CNT=0; // garder le cnt et faire le calcul de la différence
 	htim3.Instance->CNT=0;
 	// change 10*TS_TO_MIN/(ENC_RESOLUTION) to a constant
-	encoders->left.speed=encoders->left.nbr_ticks*10*TS_TO_MIN/(ENC_RESOLUTION);
-	encoders->right.speed=encoders->right.nbr_ticks*10*TS_TO_MIN/(ENC_RESOLUTION);
+
+	encoders->left.speed=(encoders->left.nbr_ticks-encoders->left.nbr_ticks_old)*10*TS_TO_MIN/(ENC_RESOLUTION);
+	encoders->right.speed=(encoders->right.nbr_ticks-encoders->right.nbr_ticks_old)*10*TS_TO_MIN/(ENC_RESOLUTION);
+
+	encoders->left.nbr_ticks_old=encoders->left.nbr_ticks;
+	encoders->right.nbr_ticks_old=encoders->right.nbr_ticks;
 	// séparer les calculs d'odométrie
-	encoders->left.distance+=encoders->left.nbr_ticks*10*ROUE/(ENC_RESOLUTION);
-	encoders->right.distance+=encoders->right.nbr_ticks*10*ROUE/(ENC_RESOLUTION);
+
 
 
 
@@ -178,8 +196,8 @@ uint8_t get_ticks(encoders_t * encoders)
 	if (encoders->right.consigne==0)
 		encoders->right.sum_erreur=0;
 
-	encoders->left.new_command+=(((encoders->left.error*KP)+(encoders->left.sum_erreur*KI))/10000);
-	encoders->right.new_command+=(((encoders->left.error*KP)+(encoders->left.sum_erreur*KI))/10000);
+	encoders->left.new_command=(((encoders->left.error*KP)+(encoders->left.sum_erreur*KI))/10000);
+	encoders->right.new_command=(((encoders->right.error*KP)+(encoders->right.sum_erreur*KI))/10000);
 
 
 
@@ -187,29 +205,29 @@ uint8_t get_ticks(encoders_t * encoders)
 	{
 		if (encoders->left.new_command<-853)
 			encoders->left.new_command=-853;
-		if (encoders->left.new_command>-30)
-			encoders->left.new_command=-30;
+		if (encoders->left.new_command>-1)
+			encoders->left.new_command=-1;
 	}
 	else
 	{
 		if (encoders->left.new_command>853)
 			encoders->left.new_command=853;
-		if (encoders->left.new_command<30)
-			encoders->left.new_command=30;
+		if (encoders->left.new_command<1)
+			encoders->left.new_command=1;
 	}
 	if (encoders->right.new_command<0)
 	{
 		if (encoders->right.new_command<-853)
 			encoders->right.new_command=-853;
-		if (encoders->right.new_command>-30)
-			encoders->right.new_command=-30;
+		if (encoders->right.new_command>-1)
+			encoders->right.new_command=-1;
 	}
 	else
 	{
 		if (encoders->right.new_command>853)
 			encoders->right.new_command=853;
-		if (encoders->right.new_command<30)
-			encoders->right.new_command=30;
+		if (encoders->right.new_command<1)
+			encoders->right.new_command=1;
 	}
 
 
@@ -218,14 +236,15 @@ uint8_t get_ticks(encoders_t * encoders)
 	if (encoders->right.consigne==0)
 		encoders->right.new_command=0;
 
-	//	if (encoders->left.old_command<abs(encoders->left.new_command))
-	//		encoders->left.old_command+=2;//16
-	//	else encoders->left.old_command=abs(encoders->left.new_command);
-	//	if (encoders->right.old_command<abs(encoders->right.new_command))
-	//		encoders->right.old_command+=2; //24
-	//	else encoders->right.old_command=abs(encoders->right.new_command);
-	encoders->left.old_command=abs(encoders->left.new_command);
-	encoders->right.old_command=abs(encoders->right.new_command);
+	if (encoders->left.old_command<abs(encoders->left.new_command))
+		encoders->left.old_command+=16;//16
+	else encoders->left.old_command=abs(encoders->left.new_command);
+	if (encoders->right.old_command<abs(encoders->right.new_command))
+		encoders->right.old_command+=16; //24
+	else encoders->right.old_command=abs(encoders->right.new_command);
+
+	//	encoders->left.old_command=abs(encoders->left.new_command);
+	//	encoders->right.old_command=abs(encoders->right.new_command);
 
 
 	if (encoders->right.new_command>0)
@@ -246,6 +265,148 @@ uint8_t get_ticks(encoders_t * encoders)
 	return 1;
 }
 
+uint8_t command_cartesien(int32_t x_dest,int32_t y_dest,encoders_t * encoders)
+{
+	int32_t distance=0;
+	double angle=0;
+	distance=sqrt(((x_dest-encoders->x)*(x_dest-encoders->x))+((y_dest-encoders->y)*(y_dest-encoders->y)));
+	if(x_dest-encoders->x==0)
+	{
+		if (y_dest-encoders->y>0)
+			angle=90;
+		else
+			angle=-90;
+	}
+	else
+		angle=atan(((double)(y_dest-encoders->y)/(x_dest-encoders->x)))*RAD_TO_DEG;
+	printf("x=%d and y=%d and x_dest=%d and y_dest=%d\n\r",encoders->x,encoders->y,x_dest,y_dest);
+	printf("Dist=%d and angle=%d\n\r",distance,(int)angle);
+
+
+	command_angle(encoders,angle);
+	while(encoders->angle_done==0); // semaphore or notification
+	command_distance(encoders,distance);
+	while(encoders->distance_done==0);
+}
+
+uint8_t odom(encoders_t * encoders)
+{
+	encoders->dr=(encoders->right.nbr_ticks-encoders->right.nbr_ticks_odom)*TICKS_TO_MM;
+	encoders->dl=(encoders->left.nbr_ticks-encoders->left.nbr_ticks_odom)*TICKS_TO_MM;
+	encoders->dalpha=atan(((double)(encoders->dr-encoders->dl)/ENTRAXE))*RAD_TO_DEG;
+	encoders->ddelta=(encoders->dr+encoders->dl)/2;
+
+	encoders->angle+=encoders->dalpha;
+
+	// Polaire
+	encoders->distance+=encoders->ddelta;
+	encoders->theta+=encoders->dalpha;
+
+	// Cartésien
+	encoders->x+=encoders->ddelta*cos(encoders->angle);
+	encoders->y+=encoders->ddelta*sin(encoders->angle);
+
+	//	if(abs(encoders->left.consigne_angle-encoders->theta)<5) // à changer avec distance != consigne_distance
+	//	{
+	//		if(abs(encoders->left.consigne_distance-encoders->distance)<10)
+	//		{
+	//			encoders->left.consigne_distance=0;
+	//			encoders->left.consigne=0;
+	//			encoders->right.consigne=0;
+	//			encoders->distance=0;
+	//			encoders->done=1;
+	//			 // semaphore or notification
+	//
+	//		}
+	//	}
+	//	if(abs(encoders->left.consigne_distance-encoders->distance)<10)
+	//	{
+	//		if(abs(encoders->left.consigne_angle-encoders->theta)<5) //encoders->angle est déjà en degré (*180/M_PI) à supprimer
+	//		{
+	//			encoders->left.consigne_angle=0;
+	//			encoders->left.consigne=0;
+	//			encoders->right.consigne=0;
+	//			encoders->theta=0;
+	//			encoders->done=1;
+	//			 // semaphore or notification
+	//
+	//		}
+	//	}
+
+
+
+	if(encoders->angle_done==1)  // à changer avec distance != consigne_distance
+	{
+		if(abs(encoders->distance)>=abs(encoders->left.consigne_distance))
+		{
+			encoders->left.consigne_distance=0;
+			encoders->left.consigne=0;
+			encoders->right.consigne=0;
+			encoders->distance=0;
+			encoders->distance_done=1;
+			// semaphore or notification
+
+		}
+	}
+	if(encoders->distance_done==1)
+	{
+		if(abs(encoders->theta)>=abs(encoders->left.consigne_angle)) //encoders->angle est déjà en degré (*180/M_PI) à supprimer
+		{
+			encoders->left.consigne_angle=0;
+			encoders->left.consigne=0;
+			encoders->right.consigne=0;
+			encoders->theta=0;
+			encoders->angle_done=1;
+			// semaphore or notification
+
+		}
+	}
+
+	//printf("angle=%d and angle_dest=%d\n\r",(int)encoders->theta,(int)encoders->left.consigne_angle);
+	//printf("dist=%d and dist_dest=%d\n\r",(int)encoders->distance,(int)encoders->left.consigne_distance);
+	encoders->left.nbr_ticks_odom=encoders->left.nbr_ticks;
+	encoders->right.nbr_ticks_odom=encoders->right.nbr_ticks;
+
+
+	return 0;
+}
+uint8_t command_distance(encoders_t * encoders, int32_t distance)
+{
+	encoders->left.consigne_distance=distance;
+	encoders->right.consigne_distance=distance;
+	if (distance >0)
+	{
+		encoders->left.consigne=50;
+		encoders->right.consigne=50;
+	}
+	else
+	{
+		encoders->left.consigne=-50;
+		encoders->right.consigne=-50;
+	}
+	encoders->distance_done=0;
+
+
+	return 0;
+}
+uint8_t command_angle(encoders_t * encoders,double angle)
+{
+	encoders->left.consigne_angle=angle;
+	encoders->right.consigne_angle=angle;
+	if (angle<encoders->theta)
+	{
+		encoders->left.consigne=50;
+		encoders->right.consigne=-50;
+	}
+	else
+	{
+		encoders->left.consigne=-50;
+		encoders->right.consigne=50;
+	}
+	encoders->angle_done=0;
+
+	return 0;
+}
 
 
 

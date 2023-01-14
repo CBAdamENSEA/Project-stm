@@ -12,7 +12,7 @@
 #include "cmsis_os.h"
 
 
-#define UART_DEVICE huart3
+#define UART_DEVICE huart2 //huart3 stlink
 #define ARGC_MAX 8
 #define BUFFER_SIZE 40
 #define SHELL_FUNC_LIST_MAX_SIZE 64

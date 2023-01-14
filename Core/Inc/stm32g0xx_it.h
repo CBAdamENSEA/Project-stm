@@ -51,6 +51,7 @@ void HardFault_Handler(void);
 void TIM6_IRQHandler(void);
 void TIM17_IRQHandler(void);
 void USART1_IRQHandler(void);
+void USART2_IRQHandler(void);
 void USART3_4_IRQHandler(void);
 /* USER CODE BEGIN EFP */
 

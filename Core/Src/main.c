@@ -48,6 +48,8 @@
 #define TASK_SHELL_PRIORITY 1
 #define TASK_ENCODER_STACK_DEPTH 512
 #define TASK_ENCODER_PRIORITY 1
+#define TASK_ODOM_STACK_DEPTH 512
+#define TASK_ODOM_PRIORITY 4
 #define TASK_COLOR_STACK_DEPTH 512
 #define TASK_COLOR_PRIORITY 3
 #define ENCODER_TICKS 3412
@@ -64,6 +66,7 @@
 /* USER CODE BEGIN PV */
 TaskHandle_t h_task_shell = NULL;
 TaskHandle_t h_task_encoder = NULL;
+TaskHandle_t h_task_odom = NULL;
 TaskHandle_t h_task_color = NULL;
 h_shell_t h_shell;
 uint8_t buffer[BUFFER_LENGTH] = {0};
@@ -143,7 +146,8 @@ int motor(h_shell_t * h_shell,int argc, char ** argv)
 		if(strncmp(argv[1],"b",1)==0)
 		{
 			encoders.left.consigne=atoi(argv[3]);
-			encoders.right.consigne=atoi(argv[3]);
+			encoders.right.consigne=encoders.left.consigne;
+
 			//			if(strncmp(argv[2],"f",1)==0)
 			//			{
 			//				motors.left.drv_motor.drv_avance(alpha);
@@ -200,82 +204,150 @@ int demo(h_shell_t * h_shell,int argc, char ** argv)
 {
 	if (argc == 1)
 	{
-		uint16_t alpha=150;
-		uint16_t position=350;
-		uint16_t final_position=0;
-		uint16_t error=5;
-		motors.left.drv_motor.drv_avance(alpha);
-		motors.right.drv_motor.drv_avance(alpha+12);
+		//		uint16_t alpha=150;
+		//		uint16_t position=350;
+		//		uint16_t final_position=0;
+		//		uint16_t error=5;
+		//		motors.left.drv_motor.drv_avance(alpha);
+		//		motors.right.drv_motor.drv_avance(alpha+12);
+		//		vTaskDelay(1000);
+		//		printf("R speed = %d Rpm\r\n",encoders.right.speed);
+		//		printf("L speed = %d Rpm\r\n",encoders.left.speed);
+		//		printf("R distance = %d mm\r\n",encoders.right.distance);
+		//		printf("L distance = %d mm\r\n",encoders.left.distance);
+		//		vTaskDelay(800);
+		//		motors.left.drv_motor.drv_stop();
+		//		motors.right.drv_motor.drv_stop();
+		//		vTaskDelay(500);
+		//		XL_320_set_goal_position(&servo,0x01, final_position);
+		//		while (abs(position-final_position)<error)
+		//		{
+		//			position=XL_320_read_present_position(&servo,0x01);
+		//		}
+		//		vTaskDelay(4000);
+		//		xSemaphoreGive(color_sensor.sem_color_read);
+		//		TCS3200_Detected_Color(&color_sensor);
+		//		vTaskDelay(4000);
+		//		xSemaphoreGive(color_sensor.sem_color_read);
+		//		TCS3200_Detected_Color(&color_sensor);
+		//		vTaskDelay(1000);
+		//
+		//		position=0;
+		//		final_position=350;
+		//		error=5;
+		//
+		//		XL_320_set_goal_position(&servo, 0x01, final_position);
+		//		while (abs(position-final_position)<error)
+		//		{
+		//			position=XL_320_read_present_position(&servo,0x01);
+		//		}
+		//		vTaskDelay(2000);
+		//		motors.left.drv_motor.drv_recule(alpha);
+		//		motors.right.drv_motor.drv_recule(alpha+12);
+		//		vTaskDelay(2000);
+		//		motors.left.drv_motor.drv_stop();
+		//		motors.right.drv_motor.drv_stop();
+		//		vTaskDelay(500);
+		//		motors.left.drv_motor.drv_avance(alpha);
+		//		motors.right.drv_motor.drv_recule(alpha);
+		//		vTaskDelay(1150); // Tourner
+		//		motors.left.drv_motor.drv_stop();
+		//		motors.right.drv_motor.drv_stop();
+		//		vTaskDelay(400); // Arrêter
+		//
+		//
+		//		position=350;
+		//		final_position=0;
+		//		error=5;
+		//		XL_320_set_goal_position(&servo,0x01, final_position);
+		//		while (abs(position-final_position)<error)
+		//		{
+		//			position=XL_320_read_present_position(&servo,0x01);
+		//		}
+		//		vTaskDelay(1000);
+		//		motors.left.drv_motor.drv_recule(alpha);
+		//		motors.right.drv_motor.drv_recule(alpha+12);
+		//		vTaskDelay(800);
+		//		motors.left.drv_motor.drv_stop();
+		//		motors.right.drv_motor.drv_stop();
+		//		position=0;
+		//		final_position=350;
+		//		error=5;
+		//
+		//		XL_320_set_goal_position(&servo, 0x01, final_position);
+		//		while (abs(position-final_position)<error)
+		//		{
+		//			position=XL_320_read_present_position(&servo,0x01);
+		//		}
+		//		vTaskDelay(1000);
+
+
+
+
+
+
+
+
+
+		//		int32_t distance=300;
+		//		double angle=20;
+		//		uint16_t position=350;
+		//		uint16_t final_position=0;
+		//		uint16_t error=5;
+		//
+		//		command_angle(&encoders,angle);
+		//		while(encoders.done==0);
+		//		command_distance(&encoders,distance);
+		//		while(encoders.done==0);
+		//
+		//		XL_320_set_goal_position(&servo,0x01, final_position);
+		//		while (abs(position-final_position)<error)
+		//		{
+		//			position=XL_320_read_present_position(&servo,0x01);
+		//		}
+		//		vTaskDelay(2000);
+		//		distance=200;
+		//		command_distance(&encoders,distance);
+		//		while(encoders.done==0);
+		//
+		//		position=0;
+		//		final_position=350;
+		//		XL_320_set_goal_position(&servo, 0x01, final_position);
+		//		while (abs(position-final_position)<error)
+		//		{
+		//			position=XL_320_read_present_position(&servo,0x01);
+		//		}
+		//		vTaskDelay(2000);
+		//
+		//		distance=500;
+		//		angle=180;
+		//
+		//		command_angle(&encoders,angle);
+		//		while(encoders.done==0);
+		//		command_distance(&encoders,distance);
+		//		while(encoders.done==0);
+		//
+		//		position=350;
+		//		final_position=0;
+		//		XL_320_set_goal_position(&servo, 0x01, final_position);
+		//		while (abs(position-final_position)<error)
+		//		{
+		//			position=XL_320_read_present_position(&servo,0x01);
+		//		}
+		//		vTaskDelay(2000);
+		//		distance=-200;
+		//		command_distance(&encoders,distance);
+		//		while(encoders.done==0);
+
+		command_cartesien(200,0,&encoders);
 		vTaskDelay(1000);
-		printf("R speed = %d Rpm\r\n",encoders.right.speed);
-		printf("L speed = %d Rpm\r\n",encoders.left.speed);
-		printf("R distance = %d mm\r\n",encoders.right.distance);
-		printf("L distance = %d mm\r\n",encoders.left.distance);
-		vTaskDelay(800);
-		motors.left.drv_motor.drv_stop();
-		motors.right.drv_motor.drv_stop();
-		vTaskDelay(500);
-		XL_320_set_goal_position(&servo,0x01, final_position);
-		while (abs(position-final_position)<error)
-		{
-			position=XL_320_read_present_position(&servo,0x01);
-		}
-		vTaskDelay(4000);
-		xSemaphoreGive(color_sensor.sem_color_read);
-		TCS3200_Detected_Color(&color_sensor);
-		vTaskDelay(4000);
-		xSemaphoreGive(color_sensor.sem_color_read);
-		TCS3200_Detected_Color(&color_sensor);
+		command_cartesien(200,200,&encoders);
 		vTaskDelay(1000);
-
-		position=0;
-		final_position=350;
-		error=5;
-
-		XL_320_set_goal_position(&servo, 0x01, final_position);
-		while (abs(position-final_position)<error)
-		{
-			position=XL_320_read_present_position(&servo,0x01);
-		}
-		vTaskDelay(2000);
-		motors.left.drv_motor.drv_recule(alpha);
-		motors.right.drv_motor.drv_recule(alpha+12);
-		vTaskDelay(2000);
-		motors.left.drv_motor.drv_stop();
-		motors.right.drv_motor.drv_stop();
-		vTaskDelay(500);
-		motors.left.drv_motor.drv_avance(alpha);
-		motors.right.drv_motor.drv_recule(alpha);
-		vTaskDelay(1150); // Tourner
-		motors.left.drv_motor.drv_stop();
-		motors.right.drv_motor.drv_stop();
-		vTaskDelay(400); // Arrêter
-
-
-		position=350;
-		final_position=0;
-		error=5;
-		XL_320_set_goal_position(&servo,0x01, final_position);
-		while (abs(position-final_position)<error)
-		{
-			position=XL_320_read_present_position(&servo,0x01);
-		}
+		command_cartesien(0,200,&encoders);
 		vTaskDelay(1000);
-		motors.left.drv_motor.drv_recule(alpha);
-		motors.right.drv_motor.drv_recule(alpha+12);
-		vTaskDelay(800);
-		motors.left.drv_motor.drv_stop();
-		motors.right.drv_motor.drv_stop();
-		position=0;
-		final_position=350;
-		error=5;
-
-		XL_320_set_goal_position(&servo, 0x01, final_position);
-		while (abs(position-final_position)<error)
-		{
-			position=XL_320_read_present_position(&servo,0x01);
-		}
+		command_cartesien(0,0,&encoders);
 		vTaskDelay(1000);
+		return 0;
 
 
 	}
@@ -308,10 +380,10 @@ int statistiques(h_shell_t * h_shell,int argc, char ** argv)
 	{
 		printf("Task            Abs Time        per Time\r\n");
 		vTaskGetRunTimeStats(Stat_buffer);
-		HAL_UART_Transmit(&huart3, (uint8_t*)Stat_buffer, strlen(Stat_buffer), HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart2, (uint8_t*)Stat_buffer, strlen(Stat_buffer), HAL_MAX_DELAY); //huart3 stlink
 		printf("\r\nTask            State   Prior.  Stack   Num\r\n");
 		vTaskList(Stat_buffer);
-		HAL_UART_Transmit(&huart3, (uint8_t*)Stat_buffer, strlen(Stat_buffer), HAL_MAX_DELAY);
+		HAL_UART_Transmit(&huart2, (uint8_t*)Stat_buffer, strlen(Stat_buffer), HAL_MAX_DELAY); //huart3 stlink
 
 		return 0;
 	}
@@ -385,6 +457,52 @@ int test_pwm(h_shell_t * h_shell,int argc, char ** argv)
 		return -1;
 	}
 }
+int test_dist(h_shell_t * h_shell,int argc, char ** argv)
+{
+	int32_t distance=atoi(argv[1]);
+	if (argc == 2)
+	{
+		command_distance(&encoders,distance);
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
+int test_angle(h_shell_t * h_shell,int argc, char ** argv)
+{
+	double angle=atoi(argv[1]);
+	if (argc == 2)
+	{
+		command_angle(&encoders,angle);
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
+
+int test_xy(h_shell_t * h_shell,int argc, char ** argv)
+{
+	int32_t x=atoi(argv[1]);
+	int32_t y=atoi(argv[2]);
+
+	if (argc == 3)
+	{
+		command_cartesien(x,y,&encoders);
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
+
 
 void task_color(void * unused)
 {
@@ -434,6 +552,9 @@ void task_shell(void * unused)
 	shell_add(&h_shell,'e', speed, "vitesse des moteurs");
 	shell_add(&h_shell,'r', couleurs, "couleur de la canette");
 	shell_add(&h_shell,'d', demo, "Démonstration");
+	shell_add(&h_shell,'a', test_dist, "tester asserv dist");
+	shell_add(&h_shell,'b', test_angle, "tester asserv angle");
+	shell_add(&h_shell,'x', test_xy, "tester asserv xy");
 	shell_run(&h_shell);	// boucle infinie
 }
 void task_encoder(void * unused)
@@ -445,6 +566,16 @@ void task_encoder(void * unused)
 	while (1)
 	{
 		get_ticks(&encoders);
+		vTaskDelay(5);
+	}
+}
+void task_odom(void * unused)
+{
+
+	while(1)
+	{
+		odom(&encoders);
+
 		vTaskDelay(50);
 	}
 }
@@ -495,6 +626,23 @@ int main(void)
 	MX_TIM16_Init();
 	/* USER CODE BEGIN 2 */
 
+	HAL_Delay(5000);
+//	char msg_blue[50];
+//	sprintf(msg_blue,"Hello\r\n");
+//	while (1)
+//	{
+//		HAL_GPIO_WritePin(BAT_LED_GPIO_Port, BAT_LED_Pin, GPIO_PIN_SET);
+//		if (HAL_UART_Transmit(&huart2, (uint8_t *)msg_blue, sizeof(msg_blue), 0xFFFF)==HAL_OK)
+//		{
+//
+//			HAL_GPIO_WritePin(BAT_LED_GPIO_Port, BAT_LED_Pin, GPIO_PIN_RESET);
+//
+//		}
+//		HAL_Delay(1000);
+//	}
+
+
+
 	//	uint16_t model_number=0;
 	//	uint8_t firmware_version=0;
 
@@ -523,6 +671,11 @@ int main(void)
 	if (xTaskCreate(task_shell, "Shell", TASK_SHELL_STACK_DEPTH, NULL, TASK_SHELL_PRIORITY, &h_task_shell) != pdPASS)
 	{
 		printf("Error creating task shell\r\n");
+		Error_Handler();
+	}
+	if (xTaskCreate(task_odom, "odom", TASK_ODOM_STACK_DEPTH, NULL, TASK_ODOM_PRIORITY, &h_task_odom) != pdPASS)
+	{
+		printf("Error creating task odom\r\n");
 		Error_Handler();
 	}
 	if (xTaskCreate(task_encoder, "Encoder", TASK_ENCODER_STACK_DEPTH, NULL, TASK_ENCODER_PRIORITY, &h_task_encoder) != pdPASS)
@@ -628,7 +781,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if (huart->Instance == USART3)
+	if (huart->Instance == USART2) //USART3 stlink
 	{
 		shell_uart_receive_irq_cb(&h_shell);	// C'est la fonction qui donne le sémaphore!
 	}

@@ -14,7 +14,7 @@
 #include "usart.h"
 #include "gpio.h"
 
-extern UART_HandleTypeDef huart3;
+extern UART_HandleTypeDef huart2; //huart3 stlink
 
 
 
@@ -32,7 +32,8 @@ void shell_uart_receive_irq_cb(h_shell_t *h_shell)
 static char uart_read(h_shell_t *h_shell) {
 	char c;
 
-	HAL_UART_Receive_IT(&huart3, (uint8_t*)(&c), 1);
+	//HAL_UART_Receive_IT(&huart3, (uint8_t*)(&c), 1);//stlink
+	HAL_UART_Receive_IT(&huart2, (uint8_t*)(&c), 1);
 	// il faut mettre la tâche shell dans l'état bloqué, jusqu'à l'interruption de réception de caractère
 	// prendre un sémaphore vide par exemple
 	xSemaphoreTake(h_shell->sem_uart_read, portMAX_DELAY);
@@ -41,7 +42,8 @@ static char uart_read(h_shell_t *h_shell) {
 }
 
 static int uart_write(char * s, uint16_t size) {
-	HAL_UART_Transmit(&huart3, (uint8_t*)s, size, HAL_MAX_DELAY);
+	//HAL_UART_Transmit(&huart3, (uint8_t*)s, size, HAL_MAX_DELAY); stlink
+	HAL_UART_Transmit(&huart2, (uint8_t*)s, size, HAL_MAX_DELAY);
 	return size;
 }
 
