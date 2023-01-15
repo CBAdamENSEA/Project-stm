@@ -33,6 +33,7 @@
 #include "motor.h"
 #include <string.h>
 #include "TCS3200.h"
+#include "bordure.h"
 
 #include "../../Drivers/Servo/XL_320.h"
 /* USER CODE END Includes */
@@ -50,6 +51,8 @@
 #define TASK_ENCODER_PRIORITY 1
 #define TASK_ODOM_STACK_DEPTH 512
 #define TASK_ODOM_PRIORITY 4
+#define TASK_BORDURE_STACK_DEPTH 64
+#define TASK_BORDURE_PRIORITY 5
 #define TASK_COLOR_STACK_DEPTH 512
 #define TASK_COLOR_PRIORITY 3
 #define ENCODER_TICKS 3412
@@ -68,6 +71,7 @@ TaskHandle_t h_task_shell = NULL;
 TaskHandle_t h_task_encoder = NULL;
 TaskHandle_t h_task_odom = NULL;
 TaskHandle_t h_task_color = NULL;
+TaskHandle_t h_task_bordure = NULL;
 h_shell_t h_shell;
 uint8_t buffer[BUFFER_LENGTH] = {0};
 uint16_t buffer_index = 0;
@@ -79,6 +83,7 @@ uint32_t cnt_encoder1;
 uint32_t cnt_encoder2;
 encoders_t encoders;
 color_sensor_t color_sensor;
+bords_t bords;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -579,6 +584,24 @@ void task_odom(void * unused)
 		vTaskDelay(50);
 	}
 }
+void task_bordure(void * unused)
+{
+	init_bords(&bords);
+	while(1)
+	{
+
+		if(update_bords(&bords))
+		{
+			command_stop(&encoders);
+
+		}
+
+
+
+
+		vTaskDelay(50);
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -627,19 +650,19 @@ int main(void)
 	/* USER CODE BEGIN 2 */
 
 	HAL_Delay(5000);
-//	char msg_blue[50];
-//	sprintf(msg_blue,"Hello\r\n");
-//	while (1)
-//	{
-//		HAL_GPIO_WritePin(BAT_LED_GPIO_Port, BAT_LED_Pin, GPIO_PIN_SET);
-//		if (HAL_UART_Transmit(&huart2, (uint8_t *)msg_blue, sizeof(msg_blue), 0xFFFF)==HAL_OK)
-//		{
-//
-//			HAL_GPIO_WritePin(BAT_LED_GPIO_Port, BAT_LED_Pin, GPIO_PIN_RESET);
-//
-//		}
-//		HAL_Delay(1000);
-//	}
+	//	char msg_blue[50];
+	//	sprintf(msg_blue,"Hello\r\n");
+	//	while (1)
+	//	{
+	//		HAL_GPIO_WritePin(BAT_LED_GPIO_Port, BAT_LED_Pin, GPIO_PIN_SET);
+	//		if (HAL_UART_Transmit(&huart2, (uint8_t *)msg_blue, sizeof(msg_blue), 0xFFFF)==HAL_OK)
+	//		{
+	//
+	//			HAL_GPIO_WritePin(BAT_LED_GPIO_Port, BAT_LED_Pin, GPIO_PIN_RESET);
+	//
+	//		}
+	//		HAL_Delay(1000);
+	//	}
 
 
 
@@ -676,6 +699,11 @@ int main(void)
 	if (xTaskCreate(task_odom, "odom", TASK_ODOM_STACK_DEPTH, NULL, TASK_ODOM_PRIORITY, &h_task_odom) != pdPASS)
 	{
 		printf("Error creating task odom\r\n");
+		Error_Handler();
+	}
+	if (xTaskCreate(task_bordure, "bordure", TASK_BORDURE_STACK_DEPTH, NULL, TASK_BORDURE_PRIORITY, &h_task_bordure) != pdPASS)
+	{
+		printf("Error creating task bordure\r\n");
 		Error_Handler();
 	}
 	if (xTaskCreate(task_encoder, "Encoder", TASK_ENCODER_STACK_DEPTH, NULL, TASK_ENCODER_PRIORITY, &h_task_encoder) != pdPASS)

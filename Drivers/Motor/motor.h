@@ -116,6 +116,9 @@ uint8_t command_cartesien(int32_t x_dest,int32_t y_dest,encoders_t * encoders);
 uint8_t odom(encoders_t * encoders);
 uint8_t command_angle(encoders_t * encoders,double angle);
 uint8_t command_distance(encoders_t * encoders, int32_t distance);
+uint8_t command_angle_stop(encoders_t * encoders);
+uint8_t command_distance_stop(encoders_t * encoders);
+uint8_t command_stop(encoders_t * encoders);
 
 
 

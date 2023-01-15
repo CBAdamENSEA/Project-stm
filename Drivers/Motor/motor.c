@@ -273,12 +273,21 @@ uint8_t command_cartesien(int32_t x_dest,int32_t y_dest,encoders_t * encoders)
 	if(x_dest-encoders->x==0)
 	{
 		if (y_dest-encoders->y>0)
-			angle=90;
+			angle=+90;
 		else
 			angle=-90;
 	}
-	else
-		angle=atan(((double)(y_dest-encoders->y)/(x_dest-encoders->x)))*RAD_TO_DEG;
+	else if (x_dest-encoders->x>0)
+	{
+		//if (((encoders->angle%360)>-90)&((encoders->angle%360)<90))
+		angle=-encoders->angle+atan(((double)(y_dest-encoders->y)/(x_dest-encoders->x)))*RAD_TO_DEG;
+
+	}
+
+	else if(x_dest-encoders->x<0)
+	{
+		angle=180-encoders->angle+atan(((double)(y_dest-encoders->y)/(x_dest-encoders->x)))*RAD_TO_DEG;
+	}
 	printf("x=%d and y=%d and x_dest=%d and y_dest=%d\n\r",encoders->x,encoders->y,x_dest,y_dest);
 	printf("Dist=%d and angle=%d\n\r",distance,(int)angle);
 
@@ -303,8 +312,8 @@ uint8_t odom(encoders_t * encoders)
 	encoders->theta+=encoders->dalpha;
 
 	// Cartésien
-	encoders->x+=encoders->ddelta*cos(encoders->angle);
-	encoders->y+=encoders->ddelta*sin(encoders->angle);
+	encoders->x+=encoders->ddelta*cos(encoders->angle/RAD_TO_DEG);
+	encoders->y+=encoders->ddelta*sin(encoders->angle/RAD_TO_DEG);
 
 	//	if(abs(encoders->left.consigne_angle-encoders->theta)<5) // à changer avec distance != consigne_distance
 	//	{
@@ -344,6 +353,7 @@ uint8_t odom(encoders_t * encoders)
 			encoders->right.consigne=0;
 			encoders->distance=0;
 			encoders->distance_done=1;
+			// add printf here
 			// semaphore or notification
 
 		}
@@ -373,7 +383,6 @@ uint8_t odom(encoders_t * encoders)
 uint8_t command_distance(encoders_t * encoders, int32_t distance)
 {
 	encoders->left.consigne_distance=distance;
-	encoders->right.consigne_distance=distance;
 	if (distance >0)
 	{
 		encoders->left.consigne=50;
@@ -392,7 +401,6 @@ uint8_t command_distance(encoders_t * encoders, int32_t distance)
 uint8_t command_angle(encoders_t * encoders,double angle)
 {
 	encoders->left.consigne_angle=angle;
-	encoders->right.consigne_angle=angle;
 	if (angle<encoders->theta)
 	{
 		encoders->left.consigne=50;
@@ -404,6 +412,43 @@ uint8_t command_angle(encoders_t * encoders,double angle)
 		encoders->right.consigne=50;
 	}
 	encoders->angle_done=0;
+
+	return 0;
+}
+uint8_t command_angle_stop(encoders_t * encoders)
+{
+	encoders->left.consigne_angle=0;
+	encoders->left.consigne=0;
+	encoders->right.consigne=0;
+	encoders->theta=0;
+	encoders->angle_done=1;
+	return 0;
+}
+uint8_t command_distance_stop(encoders_t * encoders)
+{
+	encoders->left.consigne_distance=0;
+	encoders->left.consigne=0;
+	encoders->right.consigne=0;
+	encoders->distance=0;
+	encoders->distance_done=1;
+	return 0;
+}
+uint8_t command_stop(encoders_t * encoders)
+{
+		encoders->left.consigne_distance=0;
+		encoders->left.consigne=0;
+		encoders->right.consigne=0;
+		encoders->distance=0;
+		encoders->distance_done=1;
+		encoders->left.consigne_angle=0;
+		encoders->theta=0;
+		encoders->angle_done=1;
+	vTaskDelay(100);
+	command_distance(encoders,-200);
+	while(encoders->distance_done==0);
+	command_angle(encoders,180);
+	while(encoders->angle_done==0); // semaphore or notification
+
 
 	return 0;
 }
