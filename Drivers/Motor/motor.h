@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include "math.h"
 #include "tim.h"
+#include "cmsis_os.h"
 
 
 #define RESOLUTION 1023
@@ -99,6 +100,9 @@ typedef struct{
 	int32_t y;
 	uint8_t distance_done;
 	uint8_t angle_done;
+	SemaphoreHandle_t sem_distance_done;
+	SemaphoreHandle_t sem_angle_done;
+
 
 
 } encoders_t;

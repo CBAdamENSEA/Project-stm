@@ -11,6 +11,7 @@ uint8_t init_bords(bords_t * bords)
 {
 	bords->left.state=0;
 	bords->right.state=0;
+	bords->detect=0;
 	return 1;
 }
 

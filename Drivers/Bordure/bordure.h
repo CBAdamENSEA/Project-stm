@@ -26,6 +26,7 @@ typedef struct{
 
 	bord_t right;
 	bord_t left;
+	uint8_t detect;
 
 } bords_t;
 

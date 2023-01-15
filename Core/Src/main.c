@@ -48,11 +48,15 @@
 #define TASK_SHELL_STACK_DEPTH 1024
 #define TASK_SHELL_PRIORITY 1
 #define TASK_ENCODER_STACK_DEPTH 512
-#define TASK_ENCODER_PRIORITY 1
+#define TASK_ENCODER_PRIORITY 10
 #define TASK_ODOM_STACK_DEPTH 512
 #define TASK_ODOM_PRIORITY 4
 #define TASK_BORDURE_STACK_DEPTH 64
 #define TASK_BORDURE_PRIORITY 5
+#define TASK_ANGLE_STACK_DEPTH 256
+#define TASK_ANGLE_PRIORITY 4
+#define TASK_DISTANCE_STACK_DEPTH 256
+#define TASK_DISTANCE_PRIORITY 4
 #define TASK_COLOR_STACK_DEPTH 512
 #define TASK_COLOR_PRIORITY 3
 #define ENCODER_TICKS 3412
@@ -72,6 +76,8 @@ TaskHandle_t h_task_encoder = NULL;
 TaskHandle_t h_task_odom = NULL;
 TaskHandle_t h_task_color = NULL;
 TaskHandle_t h_task_bordure = NULL;
+TaskHandle_t h_task_angle = NULL;
+TaskHandle_t h_task_distance = NULL;
 h_shell_t h_shell;
 uint8_t buffer[BUFFER_LENGTH] = {0};
 uint16_t buffer_index = 0;
@@ -543,6 +549,7 @@ void task_shell(void * unused)
 		printf("Color sensor initialized\r\n");
 	}
 
+
 	//	if (TCS3200_Init(&color_sensor))
 	//	{
 	//		printf("Color sensor initialized\r\n");
@@ -590,18 +597,58 @@ void task_bordure(void * unused)
 	while(1)
 	{
 
-		if(update_bords(&bords))
+		if(update_bords(&bords)&(bords.detect==0))
 		{
-			command_stop(&encoders);
-
+				command_stop(&encoders);
+				bords.detect=1;
+				vTaskDelay(10);
 		}
-
-
-
-
+		if(bords.detect)
+		{
+			command_distance(&encoders, -100);
+			//command_angle(&encoders, 180);
+			bords.detect=0;
+		}
 		vTaskDelay(50);
 	}
 }
+void task_angle(void * unused)
+{
+	while(1)
+	{
+		// Sémaphore
+		xSemaphoreTake(encoders.sem_angle_done, portMAX_DELAY);
+		if(abs(encoders.theta)>=abs(encoders.left.consigne_angle))
+		{
+			command_angle_stop(&encoders);
+		}
+		else
+		{
+			xSemaphoreGive(encoders.sem_angle_done);
+		}
+		vTaskDelay(50);
+	}
+}
+void task_distance(void * unused)
+{
+	while(1)
+	{
+		// Sémaphore
+		xSemaphoreTake(encoders.sem_distance_done, portMAX_DELAY);
+		if(abs(encoders.distance)>=abs(encoders.left.consigne_distance))
+		{
+			command_distance_stop(&encoders);
+		}
+		else {
+			xSemaphoreGive(encoders.sem_distance_done);
+		}
+		vTaskDelay(50);
+	}
+}
+
+
+
+
 /* USER CODE END 0 */
 
 /**
@@ -624,6 +671,8 @@ int main(void)
 	h_shell.sem_uart_read=NULL;
 	servo.sem_packet_read=NULL;
 	color_sensor.sem_color_read=NULL;
+	encoders.sem_angle_done=NULL;
+	encoders.sem_distance_done=NULL;
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
@@ -706,6 +755,17 @@ int main(void)
 		printf("Error creating task bordure\r\n");
 		Error_Handler();
 	}
+	if (xTaskCreate(task_angle, "angle", TASK_ANGLE_STACK_DEPTH, NULL, TASK_ANGLE_PRIORITY, &h_task_angle) != pdPASS)
+	{
+		printf("Error creating task angle\r\n");
+		Error_Handler();
+	}
+	if (xTaskCreate(task_distance, "distance", TASK_DISTANCE_STACK_DEPTH, NULL, TASK_DISTANCE_PRIORITY, &h_task_distance) != pdPASS)
+	{
+		printf("Error creating task distance\r\n");
+		Error_Handler();
+	}
+
 	if (xTaskCreate(task_encoder, "Encoder", TASK_ENCODER_STACK_DEPTH, NULL, TASK_ENCODER_PRIORITY, &h_task_encoder) != pdPASS)
 	{
 		printf("Error creating task shell\r\n");
