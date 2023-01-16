@@ -63,7 +63,7 @@
 #define TASK_COLOR_STACK_DEPTH 512
 #define TASK_COLOR_PRIORITY 3
 #define TASK_TOF_STACK_DEPTH 1024
-#define TASK_TOF_PRIORITY 20
+#define TASK_TOF_PRIORITY 1
 #define ENCODER_TICKS 3412
 #define TS 5
 /* USER CODE END PD */
@@ -500,6 +500,20 @@ int test_dist(h_shell_t * h_shell,int argc, char ** argv)
 		return -1;
 	}
 }
+int test_tof(h_shell_t * h_shell,int argc, char ** argv)
+{
+	if (argc == 1)
+	{
+		printf("Distance L= %d\r\n",tofs.left.distance);
+		printf("Distance R= %d\r\n",tofs.right.distance);
+		return 0;
+	}
+	else
+	{
+		printf("Erreur, pas le bon nombre d'arguments\r\n");
+		return -1;
+	}
+}
 int test_angle(h_shell_t * h_shell,int argc, char ** argv)
 {
 	double angle=atoi(argv[1]);
@@ -568,6 +582,8 @@ void task_shell(void * unused)
 	}
 
 
+
+
 	//	if (TCS3200_Init(&color_sensor))
 	//	{
 	//		printf("Color sensor initialized\r\n");
@@ -575,7 +591,7 @@ void task_shell(void * unused)
 
 	//shell_add(&h_shell,'f', fonction, (char *)"Une fonction inutile");
 	shell_add(&h_shell,'s', statistiques, "Afficher les stat");
-	shell_add(&h_shell,'t', test_pwm, "Tester le pwm du moteur right");
+	//shell_add(&h_shell,'t', test_pwm, "Tester le pwm du moteur right");
 	shell_add(&h_shell,'o', open_gate, "ouvrir la porte");
 	shell_add(&h_shell,'c', close_gate, "fermer la porte");
 	shell_add(&h_shell,'m', motor, "tourner les moteurs");
@@ -585,6 +601,7 @@ void task_shell(void * unused)
 	shell_add(&h_shell,'a', test_dist, "tester asserv dist");
 	shell_add(&h_shell,'b', test_angle, "tester asserv angle");
 	shell_add(&h_shell,'x', test_xy, "tester asserv xy");
+	shell_add(&h_shell,'t', test_tof, "tester les tofs");
 	shell_run(&h_shell);	// boucle infinie
 }
 void task_encoder(void * unused)
@@ -601,18 +618,14 @@ void task_encoder(void * unused)
 }
 void task_tof(void *unused)
 {
-	if (initVXL_tofs(&tofs))
-		{
-			printf("tofs Initialized\r\n");
-				}
+
 
 	while(1)
 	{
-		tofs.left.distance=tofs.left.drv_tof.readRangeSingleMillimeters(&distanceStr_l);
-		//printf("Distance= %d\r\n",tofs.left.distance);
-		tofs.right.distance=tofs.right.drv_tof.readRangeSingleMillimeters(&distanceStr_r);
-		printf("Distance L= %d\r\n",tofs.left.distance);
-		printf("Distance R= %d\r\n",tofs.right.distance);
+		tofs.left.distance=tofs.left.drv_tof.readRangeSingleMillimeters(&distanceStr_l,TOF_LEFT);
+		tofs.right.distance=tofs.right.drv_tof.readRangeSingleMillimeters(&distanceStr_r,TOF_RIGHT);
+		//printf("Distance L= %d\r\n",tofs.left.distance);
+		//printf("Distance R= %d\r\n",tofs.right.distance);
 		vTaskDelay(50);
 	}
 }
@@ -693,21 +706,21 @@ void task_distance(void * unused)
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
+	/* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
+	/* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+	/* MCU Configuration--------------------------------------------------------*/
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
 
-  /* USER CODE BEGIN Init */
+	/* USER CODE BEGIN Init */
 	h_shell.shell_func_list_size=0;
 	h_shell.sem_uart_read=NULL;
 	servo.sem_packet_read=NULL;
@@ -716,32 +729,37 @@ int main(void)
 	encoders.sem_distance_done=NULL;
 	encoders.sem_angle_check=NULL;
 	encoders.sem_distance_check=NULL;
-  /* USER CODE END Init */
 
-  /* Configure the system clock */
-  SystemClock_Config();
+	/* USER CODE END Init */
 
-  /* USER CODE BEGIN SysInit */
+	/* Configure the system clock */
+	SystemClock_Config();
 
-  /* USER CODE END SysInit */
+	/* USER CODE BEGIN SysInit */
 
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  MX_I2C1_Init();
-  MX_I2C2_Init();
-  MX_TIM1_Init();
-  MX_TIM3_Init();
-  MX_USART1_UART_Init();
-  MX_USART2_UART_Init();
-  MX_TIM15_Init();
-  MX_USART3_UART_Init();
-  MX_ADC1_Init();
-  MX_TIM17_Init();
-  MX_TIM7_Init();
-  MX_TIM16_Init();
-  /* USER CODE BEGIN 2 */
+	/* USER CODE END SysInit */
+
+	/* Initialize all configured peripherals */
+	MX_GPIO_Init();
+	MX_I2C1_Init();
+	MX_I2C2_Init();
+	MX_TIM1_Init();
+	MX_TIM3_Init();
+	MX_USART1_UART_Init();
+	MX_USART2_UART_Init();
+	MX_TIM15_Init();
+	MX_USART3_UART_Init();
+	MX_ADC1_Init();
+	MX_TIM17_Init();
+	MX_TIM7_Init();
+	MX_TIM16_Init();
+	/* USER CODE BEGIN 2 */
 
 	HAL_Delay(5000);
+	if (initVXL_tofs(&tofs))
+	{
+		printf("tofs Initialized\r\n");
+	}
 	//	char msg_blue[50];
 	//	sprintf(msg_blue,"Hello\r\n");
 	//	while (1)
@@ -820,23 +838,23 @@ int main(void)
 		Error_Handler();
 	}
 	if (xTaskCreate(task_tof, "TOF", TASK_TOF_STACK_DEPTH, NULL, TASK_TOF_PRIORITY, &h_task_tof) != pdPASS)
-		{
-			printf("Error creating task TOF\r\n");
-			Error_Handler();
-		}
+	{
+		printf("Error creating task TOF\r\n");
+		Error_Handler();
+	}
 	vTaskStartScheduler();
 
 
-  /* USER CODE END 2 */
+	/* USER CODE END 2 */
 
-  /* Call init function for freertos objects (in freertos.c) */
-  MX_FREERTOS_Init();
-  /* Start scheduler */
-  osKernelStart();
+	/* Call init function for freertos objects (in freertos.c) */
+	MX_FREERTOS_Init();
+	/* Start scheduler */
+	osKernelStart();
 
-  /* We should never get here as control is now taken by the scheduler */
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+	/* We should never get here as control is now taken by the scheduler */
+	/* Infinite loop */
+	/* USER CODE BEGIN WHILE */
 	while (1)
 	{
 		//		XL_320_set_goal_position(0x01, 0);
@@ -856,52 +874,52 @@ int main(void)
 
 
 		//HAL_Delay(1000);
-    /* USER CODE END WHILE */
+		/* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
+		/* USER CODE BEGIN 3 */
 	}
-  /* USER CODE END 3 */
+	/* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
-  HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
-  RCC_OscInitStruct.PLL.PLLN = 8;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+	/** Configure the main internal regulator output voltage
+	 */
+	HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1);
+	/** Initializes the RCC Oscillators according to the specified parameters
+	 * in the RCC_OscInitTypeDef structure.
+	 */
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
+	RCC_OscInitStruct.PLL.PLLN = 8;
+	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+	RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+	{
+		Error_Handler();
+	}
+	/** Initializes the CPU, AHB and APB buses clocks
+	 */
+	RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+			|RCC_CLOCKTYPE_PCLK1;
+	RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+	RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+	RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
+	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+	{
+		Error_Handler();
+	}
 }
 
 /* USER CODE BEGIN 4 */
@@ -948,59 +966,59 @@ unsigned long getRunTimeCounterValue(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM6 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM6 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  /* USER CODE BEGIN Callback 0 */
+	/* USER CODE BEGIN Callback 0 */
 
 	if (htim->Instance == TIM17)
 	{
 		TCS3200_PeriodElapsedCallback(&color_sensor);
 	}
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM6) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
+	/* USER CODE END Callback 0 */
+	if (htim->Instance == TIM6) {
+		HAL_IncTick();
+	}
+	/* USER CODE BEGIN Callback 1 */
 
-  /* USER CODE END Callback 1 */
+	/* USER CODE END Callback 1 */
 }
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
+	/* USER CODE BEGIN Error_Handler_Debug */
 	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
 	while (1)
 	{
 	}
-  /* USER CODE END Error_Handler_Debug */
+	/* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-  /* USER CODE BEGIN 6 */
+	/* USER CODE BEGIN 6 */
 	/* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+	/* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 

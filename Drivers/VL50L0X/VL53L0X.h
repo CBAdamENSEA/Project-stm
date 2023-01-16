@@ -37,6 +37,10 @@
 // PLL_period_ps = 1655; macro_period_vclks = 2304
 #define calcMacroPeriod(vcsel_period_pclks) ((((uint32_t)2304 * (vcsel_period_pclks) * 1655) + 500) / 1000)
 
+
+#define TOF_LEFT 0
+#define TOF_RIGHT 1
+
 // register addresses from API vl53l0x_device.h (ordered as listed there)
 enum regAddr {
 	SYSRANGE_START                              = 0x00,
@@ -138,14 +142,14 @@ typedef struct{
 // API Functions
 //------------------------------------------------------------
 // configures chip i2c and lib for `new_addr` (8 bit, LSB=0)
-void setAddress_VL53L0X(uint8_t new_addr);
+void setAddress_VL53L0X(uint8_t new_addr,uint8_t tof_chosen);
 // Returns the current I²C address.
 uint8_t getAddress_VL53L0X(void);
 
 // Iniitializes and configures the sensor. 
 // If the optional argument io_2v8 is 1, the sensor is configured for 2V8 mode (2.8 V I/O); 
 // if 0, the sensor is left in 1V8 mode. Returns 1 if the initialization completed successfully.
-uint8_t initVL53L0X(bool io_2v8, I2C_HandleTypeDef *handler);
+uint8_t initVL53L0X(bool io_2v8, I2C_HandleTypeDef *handler,uint8_t tof_chosen);
 
 // Sets the return signal rate limit to the given value in units of MCPS (mega counts per second). 
 // This is the minimum amplitude of the signal reflected from the target and received by the sensor 
@@ -153,10 +157,10 @@ uint8_t initVL53L0X(bool io_2v8, I2C_HandleTypeDef *handler);
 // of the sensor but also increases the likelihood of getting an inaccurate reading because of 
 //  reflections from objects other than the intended target. This limit is initialized to 0.25 MCPS 
 //  by default. The return value is a boolean indicating whether the requested limit was valid.
-uint8_t setSignalRateLimit(float limit_Mcps);
+uint8_t setSignalRateLimit(float limit_Mcps,uint8_t tof_chosen);
 
 // Returns the current return signal rate limit in MCPS.
-float getSignalRateLimit(void);
+float getSignalRateLimit(uint8_t tof_chosen);
 
 // Set the measurement timing budget in microseconds, which is the time allowed
 // for one measurement; the ST API and this library take care of splitting the
@@ -165,10 +169,10 @@ float getSignalRateLimit(void);
 // factor of N decreases the range measurement standard deviation by a factor of
 // sqrt(N). Defaults to about 33 milliseconds; the minimum is 20 ms.
 // based on VL53L0X_set_measurement_timing_budget_micro_seconds()
-uint8_t setMeasurementTimingBudget(uint32_t budget_us);
+uint8_t setMeasurementTimingBudget(uint32_t budget_us,uint8_t tof_chosen);
 
 // Returns the current measurement timing budget in microseconds.
-uint32_t getMeasurementTimingBudget(void);
+uint32_t getMeasurementTimingBudget(uint8_t tof_chosen);
 
 // Sets the VCSEL (vertical cavity surface emitting laser) pulse period for the given period type
 // (VcselPeriodPreRange or VcselPeriodFinalRange) to the given value (in PCLKs). 
@@ -176,27 +180,27 @@ uint32_t getMeasurementTimingBudget(void);
 // Pre: 12 to 18 (initialized to 14 by default)
 // Final: 8 to 14 (initialized to 10 by default)
 // The return value is a boolean indicating whether the requested period was valid.
-uint8_t setVcselPulsePeriod(vcselPeriodType type, uint8_t period_pclks);
+uint8_t setVcselPulsePeriod(vcselPeriodType type, uint8_t period_pclks,uint8_t tof_chosen);
 
 // Returns the current VCSEL pulse period for the given period type.
-uint8_t getVcselPulsePeriod(vcselPeriodType type);
+uint8_t getVcselPulsePeriod(vcselPeriodType type,uint8_t tof_chosen);
 
 // Starts continuous ranging measurements. If the argument period_ms is 0, 
 // continuous back-to-back mode is used (the sensor takes measurements as often as possible); 
 // if it is nonzero, continuous timed mode is used, with the specified inter-measurement period 
 // in milliseconds determining how often the sensor takes a measurement.
-void startContinuous(uint32_t period_ms);
+void startContinuous(uint32_t period_ms,uint8_t tof_chosen);
 
 // Stops continuous mode.
-void stopContinuous(void);
+void stopContinuous(uint8_t tof_chosen);
 
 // Returns a range reading in millimeters when continuous mode is active.
 // Additional measurement data will be copied into `extraStats` if it is non-zero.
-uint16_t readRangeContinuousMillimeters( statInfo_t_VL53L0X *extraStats );
+uint16_t readRangeContinuousMillimeters( statInfo_t_VL53L0X *extraStats,uint8_t tof_chosen );
 
 // Performs a single-shot ranging measurement and returns the reading in millimeters.
 // Additional measurement data will be copied into `extraStats` if it is non-zero.
-uint16_t readRangeSingleMillimeters( statInfo_t_VL53L0X *extraStats );
+uint16_t readRangeSingleMillimeters( statInfo_t_VL53L0X *extraStats ,uint8_t tof_chosen);
 
 // Sets a timeout period in milliseconds after which read operations will abort 
 // if the sensor is not ready. A value of 0 disables the timeout.
@@ -213,29 +217,29 @@ bool timeoutOccurred(void);
 //---------------------------------------------------------
 // I2C communication Functions
 //---------------------------------------------------------
-void writeReg(uint8_t reg, uint8_t value);        // Write an 8-bit register
-void writeReg16Bit(uint8_t reg, uint16_t value);  // Write a 16-bit register
-void writeReg32Bit(uint8_t reg, uint32_t value);  // Write a 32-bit register
-uint8_t readReg(uint8_t reg);                     // Read an 8-bit register
-uint16_t readReg16Bit(uint8_t reg);               // Read a 16-bit register
-uint32_t readReg32Bit(uint8_t reg);               // Read a 32-bit register
+void writeReg(uint8_t reg, uint8_t value,uint8_t tof_chosen);        // Write an 8-bit register
+void writeReg16Bit(uint8_t reg, uint16_t value,uint8_t tof_chosen);  // Write a 16-bit register
+void writeReg32Bit(uint8_t reg, uint32_t value,uint8_t tof_chosen);  // Write a 32-bit register
+uint8_t readReg(uint8_t reg,uint8_t tof_chosen);                     // Read an 8-bit register
+uint16_t readReg16Bit(uint8_t reg,uint8_t tof_chosen);               // Read a 16-bit register
+uint32_t readReg32Bit(uint8_t reg,uint8_t tof_chosen);               // Read a 32-bit register
 // Write `count` number of bytes from `src` to the sensor, starting at `reg`
 
 
 
 
-void writeMulti(uint8_t reg, uint8_t const *src, uint8_t count);
+void writeMulti(uint8_t reg, uint8_t const *src, uint8_t count,uint8_t tof_chosen);
 // Read `count` number of bytes from the sensor, starting at `reg`, to `dst`
-void readMulti(uint8_t reg, uint8_t *dst, uint8_t count);
+void readMulti(uint8_t reg, uint8_t *dst, uint8_t count,uint8_t tof_chosen);
 
 // TCC: Target CentreCheck
 // MSRC: Minimum Signal Rate Check
 // DSS: Dynamic Spad Selection
 
 //Déclaration de Structure
-typedef uint16_t (* tof_readRangeContinuousMillimeters_t)( statInfo_t_VL53L0X *extraStats );
-typedef uint16_t (*tof_readRangeSingleMillimeters_t)( statInfo_t_VL53L0X *extraStats );
-typedef uint8_t (*initVL53L0X_t)(bool io_2v8, I2C_HandleTypeDef *handler);
+typedef uint16_t (* tof_readRangeContinuousMillimeters_t)( statInfo_t_VL53L0X *extraStats ,uint8_t tof_chosen);
+typedef uint16_t (*tof_readRangeSingleMillimeters_t)( statInfo_t_VL53L0X *extraStats ,uint8_t tof_chosen);
+typedef uint8_t (*initVL53L0X_t)(bool io_2v8, I2C_HandleTypeDef *handler,uint8_t tof_chosen);
 typedef uint8_t (* initVXL_right_t)();
 typedef uint8_t (* initVXL_left_t)();
 
@@ -248,8 +252,6 @@ typedef struct {
 typedef struct drv_tof_struct{
 	tof_readRangeContinuousMillimeters_t readRangeContinuousMillimeters;
 	tof_readRangeSingleMillimeters_t readRangeSingleMillimeters;
-	initVXL_right_t initVXL_right;
-	initVXL_left_t initVXL_left;
 
 } drv_tof_t;
 
