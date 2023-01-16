@@ -317,8 +317,10 @@ uint8_t command_cartesien(int32_t x_dest,int32_t y_dest,encoders_t * encoders)
 
 
 	command_angle(encoders,angle);
+	vTaskDelay(20);
 	//while(encoders->angle_done==0); // semaphore or notification
 	command_distance(encoders,distance);
+	vTaskDelay(20);
 	//while(encoders->distance_done==0);
 }
 
@@ -409,13 +411,13 @@ uint8_t command_distance(encoders_t * encoders, int32_t distance)
 	encoders->left.consigne_distance=distance;
 	if (distance >0)
 	{
-		encoders->left.consigne=50;
-		encoders->right.consigne=50;
+		encoders->left.consigne=60;
+		encoders->right.consigne=60;
 	}
 	else
 	{
-		encoders->left.consigne=-50;
-		encoders->right.consigne=-50;
+		encoders->left.consigne=-60;
+		encoders->right.consigne=-60;
 	}
 	//encoders->distance_done=0;
 	xSemaphoreGive(encoders->sem_distance_check);
@@ -427,16 +429,16 @@ uint8_t command_distance(encoders_t * encoders, int32_t distance)
 }
 uint8_t command_angle(encoders_t * encoders,double angle)
 {
-	encoders->left.consigne_angle=angle;
+	encoders->left.consigne_angle=angle+10;
 	if (angle<encoders->theta)
 	{
-		encoders->left.consigne=50;
-		encoders->right.consigne=-50;
+		encoders->left.consigne=60;
+		encoders->right.consigne=-60;
 	}
 	else
 	{
-		encoders->left.consigne=-50;
-		encoders->right.consigne=50;
+		encoders->left.consigne=-60;
+		encoders->right.consigne=60;
 	}
 	//encoders->angle_done=0;
 	xSemaphoreGive(encoders->sem_angle_check);
