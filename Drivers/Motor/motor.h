@@ -102,6 +102,8 @@ typedef struct{
 	uint8_t angle_done;
 	SemaphoreHandle_t sem_distance_done;
 	SemaphoreHandle_t sem_angle_done;
+	SemaphoreHandle_t sem_distance_check;
+	SemaphoreHandle_t sem_angle_check;
 
 
 

@@ -162,6 +162,18 @@ uint8_t init_encoders(encoders_t * encoders)
 		printf("Error semaphore distance\r\n");
 		while(1);
 	}
+	encoders->sem_angle_check=xSemaphoreCreateBinary();
+	if (encoders->sem_angle_check == NULL)
+	{
+		printf("Error semaphore angle check\r\n");
+		while(1);
+	}
+	encoders->sem_distance_check=xSemaphoreCreateBinary();
+	if (encoders->sem_distance_check == NULL)
+	{
+		printf("Error semaphore distance check\r\n");
+		while(1);
+	}
 
 	if(HAL_TIM_Encoder_Start(&htim1, TIM_CHANNEL_ALL)!=HAL_OK)
 	{
@@ -355,34 +367,34 @@ uint8_t odom(encoders_t * encoders)
 	//	}
 
 
-//
-//	if(encoders->angle_done==1)  // à changer avec distance != consigne_distance
-//	{
-//		if(abs(encoders->distance)>=abs(encoders->left.consigne_distance))
-//		{
-//			encoders->left.consigne_distance=0;
-//			encoders->left.consigne=0;
-//			encoders->right.consigne=0;
-//			encoders->distance=0;
-//			encoders->distance_done=1;
-//			// add printf here
-//			// semaphore or notification
-//
-//		}
-//	}
-//	if(encoders->distance_done==1)
-//	{
-//		if(abs(encoders->theta)>=abs(encoders->left.consigne_angle)) //encoders->angle est déjà en degré (*180/M_PI) à supprimer
-//		{
-//			encoders->left.consigne_angle=0;
-//			encoders->left.consigne=0;
-//			encoders->right.consigne=0;
-//			encoders->theta=0;
-//			encoders->angle_done=1;
-//			// semaphore or notification
-//
-//		}
-//	}
+	//
+	//	if(encoders->angle_done==1)  // à changer avec distance != consigne_distance
+	//	{
+	//		if(abs(encoders->distance)>=abs(encoders->left.consigne_distance))
+	//		{
+	//			encoders->left.consigne_distance=0;
+	//			encoders->left.consigne=0;
+	//			encoders->right.consigne=0;
+	//			encoders->distance=0;
+	//			encoders->distance_done=1;
+	//			// add printf here
+	//			// semaphore or notification
+	//
+	//		}
+	//	}
+	//	if(encoders->distance_done==1)
+	//	{
+	//		if(abs(encoders->theta)>=abs(encoders->left.consigne_angle)) //encoders->angle est déjà en degré (*180/M_PI) à supprimer
+	//		{
+	//			encoders->left.consigne_angle=0;
+	//			encoders->left.consigne=0;
+	//			encoders->right.consigne=0;
+	//			encoders->theta=0;
+	//			encoders->angle_done=1;
+	//			// semaphore or notification
+	//
+	//		}
+	//	}
 
 	//printf("angle=%d and angle_dest=%d\n\r",(int)encoders->theta,(int)encoders->left.consigne_angle);
 	//printf("dist=%d and dist_dest=%d\n\r",(int)encoders->distance,(int)encoders->left.consigne_distance);
@@ -406,7 +418,9 @@ uint8_t command_distance(encoders_t * encoders, int32_t distance)
 		encoders->right.consigne=-50;
 	}
 	//encoders->distance_done=0;
-	xSemaphoreGive(encoders->sem_distance_done);
+	xSemaphoreGive(encoders->sem_distance_check);
+	xSemaphoreTake(encoders->sem_distance_done, portMAX_DELAY);
+	//xSemaphoreGive(encoders->sem_distance_done);
 
 
 	return 0;
@@ -425,7 +439,9 @@ uint8_t command_angle(encoders_t * encoders,double angle)
 		encoders->right.consigne=50;
 	}
 	//encoders->angle_done=0;
-	xSemaphoreGive(encoders->sem_angle_done);
+	xSemaphoreGive(encoders->sem_angle_check);
+	xSemaphoreTake(encoders->sem_angle_done, portMAX_DELAY);
+
 
 	return 0;
 }

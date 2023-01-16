@@ -600,6 +600,8 @@ void task_bordure(void * unused)
 		if(update_bords(&bords)&(bords.detect==0))
 		{
 				command_stop(&encoders);
+				xSemaphoreGive(encoders.sem_angle_done);
+				xSemaphoreGive(encoders.sem_distance_done);
 				bords.detect=1;
 				vTaskDelay(10);
 		}
@@ -617,14 +619,15 @@ void task_angle(void * unused)
 	while(1)
 	{
 		// Sémaphore
-		xSemaphoreTake(encoders.sem_angle_done, portMAX_DELAY);
-		if(abs(encoders.theta)>=abs(encoders.left.consigne_angle))
+		xSemaphoreTake(encoders.sem_angle_check, portMAX_DELAY);
+		if(abs(encoders.theta)>abs(encoders.left.consigne_angle))
 		{
 			command_angle_stop(&encoders);
+			xSemaphoreGive(encoders.sem_angle_done);
 		}
 		else
 		{
-			xSemaphoreGive(encoders.sem_angle_done);
+			xSemaphoreGive(encoders.sem_angle_check);
 		}
 		vTaskDelay(50);
 	}
@@ -634,14 +637,17 @@ void task_distance(void * unused)
 	while(1)
 	{
 		// Sémaphore
-		xSemaphoreTake(encoders.sem_distance_done, portMAX_DELAY);
-		if(abs(encoders.distance)>=abs(encoders.left.consigne_distance))
+		xSemaphoreTake(encoders.sem_distance_check, portMAX_DELAY);
+		if(abs(encoders.distance)>abs(encoders.left.consigne_distance))
 		{
 			command_distance_stop(&encoders);
-		}
-		else {
 			xSemaphoreGive(encoders.sem_distance_done);
 		}
+		else
+		{
+			xSemaphoreGive(encoders.sem_distance_check);
+		}
+
 		vTaskDelay(50);
 	}
 }
@@ -673,6 +679,8 @@ int main(void)
 	color_sensor.sem_color_read=NULL;
 	encoders.sem_angle_done=NULL;
 	encoders.sem_distance_done=NULL;
+	encoders.sem_angle_check=NULL;
+	encoders.sem_distance_check=NULL;
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
