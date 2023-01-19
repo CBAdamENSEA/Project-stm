@@ -584,6 +584,7 @@ void task_shell(void * unused)
 
 
 
+
 	//	if (TCS3200_Init(&color_sensor))
 	//	{
 	//		printf("Color sensor initialized\r\n");
@@ -671,6 +672,7 @@ void task_angle(void * unused)
 		if(abs(encoders.theta)>abs(encoders.left.consigne_angle))
 		{
 			command_angle_stop(&encoders);
+			printf("angle=%d\r\n",(int)encoders.angle);
 			xSemaphoreGive(encoders.sem_angle_done);
 		}
 		else
@@ -699,6 +701,8 @@ void task_distance(void * unused)
 		vTaskDelay(50);
 	}
 }
+
+
 
 
 
@@ -760,6 +764,7 @@ int main(void)
 	{
 		printf("tofs Initialized\r\n");
 	}
+
 	//	char msg_blue[50];
 	//	sprintf(msg_blue,"Hello\r\n");
 	//	while (1)

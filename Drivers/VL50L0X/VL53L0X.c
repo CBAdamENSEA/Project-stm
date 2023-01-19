@@ -912,8 +912,12 @@ bool getSpadInfo(uint8_t * count, bool * type_is_aperture,uint8_t tof_chosen)
 	writeReg(0x94, 0x6b,tof_chosen);
 	writeReg(0x83, 0x00,tof_chosen);
 	startTimeout();
-	while (readReg(0x83,tof_chosen) == 0x00)
+	uint8_t register_83=0;
+	register_83=readReg(0x83,tof_chosen);
+	while (readReg(0x83,tof_chosen) == 0x00) // Il se bloque ici
 	{
+		register_83=readReg(0x83,tof_chosen);
+
 		if (checkTimeoutExpired()) { return false; }
 	}
 	writeReg(0x83, 0x01,tof_chosen);
@@ -975,8 +979,10 @@ uint8_t initVXL_tofs(tofs_t *tofs)
 	HAL_GPIO_WritePin(TOF2_XSHUT_GPIO_Port, TOF2_XSHUT_Pin, GPIO_PIN_SET);
 	//HAL_GPIO_WritePin(TOF1_GPIO1_GPIO_Port, TOF1_GPIO1_Pin, GPIO_PIN_RESET);
 	//HAL_GPIO_WritePin(TOF2_GPIO1_GPIO_Port, TOF2_GPIO1_Pin, GPIO_PIN_RESET);
-	initVXL_left();
+
 	initVXL_right();
+
+	initVXL_left();
 	tofs->left.drv_tof.readRangeSingleMillimeters=readRangeSingleMillimeters;
 	tofs->right.drv_tof.readRangeSingleMillimeters=readRangeSingleMillimeters;
 	return 1;
