@@ -760,7 +760,7 @@ void task_searching(void * unused)
 		{
 
 		}
-		else if ((tofs.distance>500)&(detected==0))
+		else if ((tofs.right.distance>500)&(detected==0)) // Il faut ajouter l'avancement si on arrive à 360°
 		{
 			printf("searching\r\n");
 			command_angle(&encoders,pas);
