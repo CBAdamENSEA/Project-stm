@@ -64,7 +64,7 @@
 #define TASK_COLOR_PRIORITY 3
 #define TASK_TOF_STACK_DEPTH 1024
 #define TASK_TOF_PRIORITY 1
-#define TASK_SEARCHING_STACK_DEPTH 256
+#define TASK_SEARCHING_STACK_DEPTH 512
 #define TASK_SEARCHING_PRIORITY 1
 #define ENCODER_TICKS 3412
 #define TS 5
@@ -400,6 +400,7 @@ int couleurs(h_shell_t * h_shell,int argc, char ** argv)
 	{
 
 		xSemaphoreGive(color_sensor.sem_color_read);
+		xSemaphoreTake(color_sensor.sem_color_done, portMAX_DELAY);
 		TCS3200_Detected_Color(&color_sensor);
 		return 0;
 	}
@@ -566,6 +567,7 @@ void task_color(void * unused)
 		xSemaphoreTake(color_sensor.sem_color_read, portMAX_DELAY);
 		if(TCS3200_Read_Color(&color_sensor,FILTER_RED))
 		{
+			xSemaphoreGive(color_sensor.sem_color_done);
 			//printf("red color is : %d\r\n", color_sensor.red);
 		}
 		//TCS3200_Detected_Color(&color_sensor);
@@ -639,12 +641,12 @@ void task_odom(void * unused)
 void task_bordure(void * unused)
 {
 	init_bords(&bords);
-//	sem_searching=xSemaphoreCreateBinary();
-//	if (sem_searching == NULL)
-//	{
-//		printf("Error semaphore searching\r\n");
-//		while(1);
-//	}
+	//	sem_searching=xSemaphoreCreateBinary();
+	//	if (sem_searching == NULL)
+	//	{
+	//		printf("Error semaphore searching\r\n");
+	//		while(1);
+	//	}
 	while(1)
 	{
 
@@ -739,16 +741,20 @@ void task_searching(void * unused)
 	int on_stop=1;
 	uint16_t position=350;
 	uint16_t final_position=0;
-	uint16_t error=5;
+	uint16_t error=10;
 	uint8_t detected=0;
 	uint8_t approche=0;
 	uint8_t positioning=0;
 	uint8_t positioning2=0;
 	uint8_t open=0;
+	uint8_t catching=0;
+	uint8_t close=0;
+	uint8_t back=0;
+	uint8_t color=0;
 
 	while(1)
 	{
-		//xSemaphoreTake(sem_searching, portMAX_DELAY);
+
 		ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
 		if (tofs.distance==0)
 		{
@@ -756,10 +762,12 @@ void task_searching(void * unused)
 		}
 		else if ((tofs.distance>500)&(detected==0))
 		{
+			printf("searching\r\n");
 			command_angle(&encoders,pas);
 		}
 		else if ((tofs.distance<500)&(detected==0))
 		{
+			printf("Detected\r\n");
 			detected=1;
 
 		}
@@ -770,22 +778,28 @@ void task_searching(void * unused)
 		//		}
 		else if ((detected)&(positioning==0))
 		{
-			if (abs(tofs.left.distance-tofs.right.distance)<150)
+			printf("Positioning 1\r\n");
+			if (abs(tofs.left.distance-tofs.right.distance)<100)
+			{
 				positioning=1;
-//			else
-//				//command_angle(&encoders,-pas);
-//			else if (tofs.left.distance>tofs.right.distance)
-//				command_angle(&encoders,-2.0);
-//			else if (tofs.left.distance>tofs.right.distance)
-//				command_angle(&encoders,2.0);
+
+				//command_angle(&encoders,pas);
+			}
+
+			else if (tofs.left.distance>tofs.right.distance)
+				command_angle(&encoders,-pas);
+			else if (tofs.left.distance<tofs.right.distance)
+				command_angle(&encoders,pas);
 		}
 		else if ((positioning==1)&(approche==0))
 		{
+			printf("Approaching\r\n");
 			command_distance(&encoders,tofs.distance-200);
 			approche=1;
 		}
 		else if ((approche)&(open==0))
 		{
+			printf("Opening\r\n");
 			XL_320_set_goal_position(&servo,0x01, final_position);
 			while (abs(position-final_position)<error)
 			{
@@ -795,16 +809,57 @@ void task_searching(void * unused)
 		}
 		else if ((open)&(positioning2==0))
 		{
-			if (abs(tofs.left.distance-tofs.right.distance)<20)
+			printf("Positioning 2\r\n");
+			if (abs(tofs.left.distance-tofs.right.distance)<50)
 				positioning2=1;
 			else if (tofs.left.distance>tofs.right.distance)
-				command_angle(&encoders,-pas);
-			else if (tofs.left.distance>tofs.right.distance)
-				command_angle(&encoders,pas);
+				command_angle(&encoders,-pas/2);
+			else if (tofs.left.distance<tofs.right.distance)
+				command_angle(&encoders,pas/2);
+		}
+		else if ((positioning2)&(catching==0))
+		{
+			printf("Catching\r\n");
+			command_distance(&encoders,tofs.distance+20);
+			catching=1;
+		}
+		else if ((catching)&(close==0))
+		{
+			printf("Closing\r\n");
+			position=0;
+			final_position=350;
+			XL_320_set_goal_position(&servo,0x01, final_position);
+			while (abs(position-final_position)<error)
+			{
+				position=XL_320_read_present_position(&servo,0x01);
+			}
+
+			close=1;
+		}
+		else if ((close)&(color==0))
+		{
+			//vTaskDelay(1000);
+			color=1;
+			//			xSemaphoreGive(color_sensor.sem_color_read);
+			//			xSemaphoreTake(color_sensor.sem_color_done, portMAX_DELAY);
+			//			TCS3200_Detected_Color(&color_sensor);
+			if(TCS3200_Read_Color(&color_sensor,FILTER_RED))
+			{
+				TCS3200_Detected_Color(&color_sensor);
+				//printf("red color is : %d\r\n", color_sensor.red);
+			}
+
+		}
+		else if ((color)&(back==0))
+		{
+			printf("Going back\r\n");
+			back=1;
+			command_cartesien(0, 0, &encoders);
 		}
 
 		printf("left=%d , right=%d, distance=%d\r\n",tofs.left.distance,tofs.right.distance,tofs.distance);
 		//vTaskDelay(500);
+
 		xTaskNotifyGive( h_task_tof );
 
 	}
@@ -835,6 +890,7 @@ int main(void)
 	h_shell.sem_uart_read=NULL;
 	servo.sem_packet_read=NULL;
 	color_sensor.sem_color_read=NULL;
+	color_sensor.sem_color_done=NULL;
 	encoders.sem_angle_done=NULL;
 	encoders.sem_distance_done=NULL;
 	encoders.sem_angle_check=NULL;
@@ -946,11 +1002,11 @@ int main(void)
 		printf("Error creating task shell\r\n");
 		Error_Handler();
 	}
-	if (xTaskCreate(task_color, "Color", TASK_COLOR_STACK_DEPTH, NULL, TASK_COLOR_PRIORITY, &h_task_color) != pdPASS)
-	{
-		printf("Error creating task color\r\n");
-		Error_Handler();
-	}
+//	if (xTaskCreate(task_color, "Color", TASK_COLOR_STACK_DEPTH, NULL, TASK_COLOR_PRIORITY, &h_task_color) != pdPASS)
+//	{
+//		printf("Error creating task color\r\n");
+//		Error_Handler();
+//	}
 	if (xTaskCreate(task_tof, "TOF", TASK_TOF_STACK_DEPTH, NULL, TASK_TOF_PRIORITY, &h_task_tof) != pdPASS)
 	{
 		printf("Error creating task TOF\r\n");

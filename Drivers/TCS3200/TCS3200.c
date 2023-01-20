@@ -98,6 +98,12 @@ uint8_t TCS3200_Init(color_sensor_t * color_sensor)
 		printf("Error semaphore color sensor\r\n");
 		while(1);
 	}
+	color_sensor->sem_color_done=xSemaphoreCreateBinary();
+	if (color_sensor->sem_color_done == NULL)
+		{
+			printf("Error semaphore color sensor done\r\n");
+			while(1);
+		}
 	if (TCS3200_Enable(STATE_ENABLE)==0)
 	{
 		return 0;

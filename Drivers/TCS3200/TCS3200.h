@@ -38,6 +38,7 @@ typedef struct color_sensor_struct
 	uint32_t blue;
 	uint8_t output;
 	SemaphoreHandle_t sem_color_read;
+	SemaphoreHandle_t sem_color_done;
 } color_sensor_t;
 
 
