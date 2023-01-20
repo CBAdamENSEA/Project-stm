@@ -55,7 +55,7 @@
 #define TASK_ODOM_STACK_DEPTH 512
 #define TASK_ODOM_PRIORITY 4
 #define TASK_BORDURE_STACK_DEPTH 64
-#define TASK_BORDURE_PRIORITY 5
+#define TASK_BORDURE_PRIORITY 8
 #define TASK_ANGLE_STACK_DEPTH 256
 #define TASK_ANGLE_PRIORITY 4
 #define TASK_DISTANCE_STACK_DEPTH 256
@@ -64,6 +64,8 @@
 #define TASK_COLOR_PRIORITY 3
 #define TASK_TOF_STACK_DEPTH 1024
 #define TASK_TOF_PRIORITY 1
+#define TASK_SEARCHING_STACK_DEPTH 256
+#define TASK_SEARCHING_PRIORITY 1
 #define ENCODER_TICKS 3412
 #define TS 5
 /* USER CODE END PD */
@@ -84,6 +86,9 @@ TaskHandle_t h_task_bordure = NULL;
 TaskHandle_t h_task_angle = NULL;
 TaskHandle_t h_task_distance = NULL;
 TaskHandle_t h_task_tof = NULL;
+TaskHandle_t h_task_searching = NULL;
+
+SemaphoreHandle_t sem_searching;
 
 
 
@@ -108,6 +113,8 @@ uint16_t distance_gauche;
 encoders_t encoders;
 color_sensor_t color_sensor;
 bords_t bords;
+
+int tof_count=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -585,6 +592,7 @@ void task_shell(void * unused)
 
 
 
+
 	//	if (TCS3200_Init(&color_sensor))
 	//	{
 	//		printf("Color sensor initialized\r\n");
@@ -617,19 +625,7 @@ void task_encoder(void * unused)
 		vTaskDelay(5);
 	}
 }
-void task_tof(void *unused)
-{
 
-
-	while(1)
-	{
-		tofs.left.distance=tofs.left.drv_tof.readRangeSingleMillimeters(&distanceStr_l,TOF_LEFT);
-		tofs.right.distance=tofs.right.drv_tof.readRangeSingleMillimeters(&distanceStr_r,TOF_RIGHT);
-		//printf("Distance L= %d\r\n",tofs.left.distance);
-		//printf("Distance R= %d\r\n",tofs.right.distance);
-		vTaskDelay(50);
-	}
-}
 void task_odom(void * unused)
 {
 
@@ -643,6 +639,12 @@ void task_odom(void * unused)
 void task_bordure(void * unused)
 {
 	init_bords(&bords);
+//	sem_searching=xSemaphoreCreateBinary();
+//	if (sem_searching == NULL)
+//	{
+//		printf("Error semaphore searching\r\n");
+//		while(1);
+//	}
 	while(1)
 	{
 
@@ -672,14 +674,14 @@ void task_angle(void * unused)
 		if(abs(encoders.theta)>abs(encoders.left.consigne_angle))
 		{
 			command_angle_stop(&encoders);
-			printf("angle=%d\r\n",(int)encoders.angle);
+			//printf("angle=%d\r\n",(int)encoders.angle);
 			xSemaphoreGive(encoders.sem_angle_done);
 		}
 		else
 		{
 			xSemaphoreGive(encoders.sem_angle_check);
 		}
-		vTaskDelay(50);
+		vTaskDelay(10);
 	}
 }
 void task_distance(void * unused)
@@ -698,11 +700,115 @@ void task_distance(void * unused)
 			xSemaphoreGive(encoders.sem_distance_check);
 		}
 
-		vTaskDelay(50);
+		vTaskDelay(10);
 	}
 }
+void task_tof(void *unused)
+{
+
+	int left=0;
+	int right=0;
+	while(1)
+	{
+		tofs.left.distance=tofs.left.drv_tof.readRangeSingleMillimeters(&distanceStr_l,TOF_LEFT);
+		tofs.right.distance=tofs.right.drv_tof.readRangeSingleMillimeters(&distanceStr_r,TOF_RIGHT);
+		tof_count++;
+
+		if ((tofs.left.distance>8000)&(tofs.right.distance<8000))
+			tofs.distance=tofs.right.distance;
+		else if ((tofs.left.distance<8000)&(tofs.right.distance>8000))
+			tofs.distance=tofs.left.distance;
+		else
+			tofs.distance=(tofs.left.distance+tofs.right.distance)/2;
+		xTaskNotifyGive(h_task_searching);
+		ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
 
 
+
+		//printf("Distance L= %d\r\n",tofs.left.distance);
+		//printf("Distance R= %d\r\n",tofs.right.distance);
+		vTaskDelay(10);
+	}
+}
+void task_searching(void * unused)
+{
+	double pas=5.0;
+	int angle=0;
+	int cmpt=0;
+	int on=1;
+	int on_stop=1;
+	uint16_t position=350;
+	uint16_t final_position=0;
+	uint16_t error=5;
+	uint8_t detected=0;
+	uint8_t approche=0;
+	uint8_t positioning=0;
+	uint8_t positioning2=0;
+	uint8_t open=0;
+
+	while(1)
+	{
+		//xSemaphoreTake(sem_searching, portMAX_DELAY);
+		ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
+		if (tofs.distance==0)
+		{
+
+		}
+		else if ((tofs.distance>500)&(detected==0))
+		{
+			command_angle(&encoders,pas);
+		}
+		else if ((tofs.distance<500)&(detected==0))
+		{
+			detected=1;
+
+		}
+		//		else if ((detected)&(approche==0))
+		//		{
+		//			command_distance(&encoders,tofs.distance-300);
+		//			approche=1;
+		//		}
+		else if ((detected)&(positioning==0))
+		{
+			if (abs(tofs.left.distance-tofs.right.distance)<150)
+				positioning=1;
+//			else
+//				//command_angle(&encoders,-pas);
+//			else if (tofs.left.distance>tofs.right.distance)
+//				command_angle(&encoders,-2.0);
+//			else if (tofs.left.distance>tofs.right.distance)
+//				command_angle(&encoders,2.0);
+		}
+		else if ((positioning==1)&(approche==0))
+		{
+			command_distance(&encoders,tofs.distance-200);
+			approche=1;
+		}
+		else if ((approche)&(open==0))
+		{
+			XL_320_set_goal_position(&servo,0x01, final_position);
+			while (abs(position-final_position)<error)
+			{
+				position=XL_320_read_present_position(&servo,0x01);
+			}
+			open=1;
+		}
+		else if ((open)&(positioning2==0))
+		{
+			if (abs(tofs.left.distance-tofs.right.distance)<20)
+				positioning2=1;
+			else if (tofs.left.distance>tofs.right.distance)
+				command_angle(&encoders,-pas);
+			else if (tofs.left.distance>tofs.right.distance)
+				command_angle(&encoders,pas);
+		}
+
+		printf("left=%d , right=%d, distance=%d\r\n",tofs.left.distance,tofs.right.distance,tofs.distance);
+		//vTaskDelay(500);
+		xTaskNotifyGive( h_task_tof );
+
+	}
+}
 
 
 
@@ -733,7 +839,7 @@ int main(void)
 	encoders.sem_distance_done=NULL;
 	encoders.sem_angle_check=NULL;
 	encoders.sem_distance_check=NULL;
-
+	sem_searching=NULL;
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
@@ -806,6 +912,9 @@ int main(void)
 	//	}
 	//HAL_Delay(100);
 	//printf("Creating task shell\r\n");
+
+
+
 	if (xTaskCreate(task_shell, "Shell", TASK_SHELL_STACK_DEPTH, NULL, TASK_SHELL_PRIORITY, &h_task_shell) != pdPASS)
 	{
 		printf("Error creating task shell\r\n");
@@ -845,6 +954,11 @@ int main(void)
 	if (xTaskCreate(task_tof, "TOF", TASK_TOF_STACK_DEPTH, NULL, TASK_TOF_PRIORITY, &h_task_tof) != pdPASS)
 	{
 		printf("Error creating task TOF\r\n");
+		Error_Handler();
+	}
+	if (xTaskCreate(task_searching, "Searching", TASK_SEARCHING_STACK_DEPTH, NULL, TASK_SEARCHING_PRIORITY, &h_task_searching) != pdPASS)
+	{
+		printf("Error creating task searching\r\n");
 		Error_Handler();
 	}
 	vTaskStartScheduler();

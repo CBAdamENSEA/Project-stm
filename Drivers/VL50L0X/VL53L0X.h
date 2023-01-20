@@ -263,9 +263,10 @@ typedef struct{
 
 
 typedef struct{
-
+	int distance;
 	tof_t right;
 	tof_t left;
+
 
 } tofs_t;
 uint8_t init_VL50L0X(void);

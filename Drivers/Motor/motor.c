@@ -328,7 +328,7 @@ uint8_t odom(encoders_t * encoders)
 {
 	encoders->dr=(encoders->right.nbr_ticks-encoders->right.nbr_ticks_odom)*TICKS_TO_MM;
 	encoders->dl=(encoders->left.nbr_ticks-encoders->left.nbr_ticks_odom)*TICKS_TO_MM;
-	encoders->dalpha=atan(((double)(encoders->dr-encoders->dl)/ENTRAXE))*RAD_TO_DEG;
+	encoders->dalpha=atan(((double)(encoders->dr-encoders->dl)/ENTRAXE))*RAD_TO_DEG*0.95;
 	encoders->ddelta=(encoders->dr+encoders->dl)/2;
 
 	encoders->angle+=encoders->dalpha;
@@ -408,42 +408,47 @@ uint8_t odom(encoders_t * encoders)
 }
 uint8_t command_distance(encoders_t * encoders, int32_t distance)
 {
+	if (encoders->distance_done==1)
+	{
+
 	encoders->left.consigne_distance=distance;
 	if (distance >0)
 	{
-		encoders->left.consigne=60;
-		encoders->right.consigne=60;
+		encoders->left.consigne=50;
+		encoders->right.consigne=50;
 	}
 	else
 	{
-		encoders->left.consigne=-60;
-		encoders->right.consigne=-60;
+		encoders->left.consigne=-50;
+		encoders->right.consigne=-50;
 	}
 	//encoders->distance_done=0;
 	xSemaphoreGive(encoders->sem_distance_check);
 	xSemaphoreTake(encoders->sem_distance_done, portMAX_DELAY);
 	//xSemaphoreGive(encoders->sem_distance_done);
-
+	}
 
 	return 0;
 }
 uint8_t command_angle(encoders_t * encoders,double angle)
 {
-	encoders->left.consigne_angle=angle+10;
-	if (angle<encoders->theta)
+	if (encoders->angle_done==1)
 	{
-		encoders->left.consigne=60;
-		encoders->right.consigne=-60;
+		encoders->left.consigne_angle=angle;
+		if (angle<encoders->theta)
+		{
+			encoders->left.consigne=50;
+			encoders->right.consigne=-50;
+		}
+		else
+		{
+			encoders->left.consigne=-50;
+			encoders->right.consigne=50;
+		}
+		//encoders->angle_done=0;
+		xSemaphoreGive(encoders->sem_angle_check);
+		xSemaphoreTake(encoders->sem_angle_done, portMAX_DELAY);
 	}
-	else
-	{
-		encoders->left.consigne=-60;
-		encoders->right.consigne=60;
-	}
-	//encoders->angle_done=0;
-	xSemaphoreGive(encoders->sem_angle_check);
-	xSemaphoreTake(encoders->sem_angle_done, portMAX_DELAY);
-
 
 	return 0;
 }

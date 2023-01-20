@@ -985,6 +985,9 @@ uint8_t initVXL_tofs(tofs_t *tofs)
 	initVXL_left();
 	tofs->left.drv_tof.readRangeSingleMillimeters=readRangeSingleMillimeters;
 	tofs->right.drv_tof.readRangeSingleMillimeters=readRangeSingleMillimeters;
+
+	tofs->left.drv_tof.readRangeContinuousMillimeters=readRangeContinuousMillimeters;
+	tofs->right.drv_tof.readRangeContinuousMillimeters=readRangeContinuousMillimeters;
 	return 1;
 }
 
