@@ -140,8 +140,8 @@ uint8_t init_encoders(encoders_t * encoders)
 	encoders->angle=0; // angle initiale du robot dans le repère de la table
 	encoders->distance=0;
 	encoders->theta=0;
-	encoders->x=0; // position initiale du robot dans le repère de la table
-	encoders->y=0; // position initiale du robot dans le repère de la table
+	encoders->x=200; // position initiale du robot dans le repère de la table
+	encoders->y=300; // position initiale du robot dans le repère de la table
 	encoders->ddelta=0;
 	encoders->dalpha=0;
 	encoders->dl=0;
@@ -312,8 +312,8 @@ uint8_t command_cartesien(int32_t x_dest,int32_t y_dest,encoders_t * encoders)
 	{
 		angle=180-encoders->angle+atan(((double)(y_dest-encoders->y)/(x_dest-encoders->x)))*RAD_TO_DEG;
 	}
-	printf("x=%d and y=%d and x_dest=%d and y_dest=%d\n\r",encoders->x,encoders->y,x_dest,y_dest);
-	printf("Dist=%d and angle=%d\n\r",distance,(int)angle);
+//	printf("x=%d and y=%d and x_dest=%d and y_dest=%d\n\r",encoders->x,encoders->y,x_dest,y_dest);
+//	printf("Dist=%d and angle=%d\n\r",distance,(int)angle);
 
 
 	command_angle(encoders,angle);
@@ -340,6 +340,10 @@ uint8_t odom(encoders_t * encoders)
 	// Cartésien
 	encoders->x+=encoders->ddelta*cos(encoders->angle/RAD_TO_DEG);
 	encoders->y+=encoders->ddelta*sin(encoders->angle/RAD_TO_DEG);
+
+
+
+
 
 	//	if(abs(encoders->left.consigne_angle-encoders->theta)<5) // à changer avec distance != consigne_distance
 	//	{

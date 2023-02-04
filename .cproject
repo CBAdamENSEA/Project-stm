@@ -54,6 +54,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Project stm/Drivers/TCS3200}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Project stm/Drivers/Bordure}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Project stm/Drivers/VL50L0X}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Project stm/Drivers/files_Api_TOF_et_Driver_TOF}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1130863284" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

@@ -61,8 +61,8 @@ static int sh_help(h_shell_t *h_shell,int argc, char ** argv) {
 void shell_init(h_shell_t *h_shell) {
 	int size = 0;
 
-	size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "\r\n\r\n== Démonstration Robot CARY ==\r\n");
-	uart_write(h_shell->print_buffer, size);
+//	size = snprintf (h_shell->print_buffer, BUFFER_SIZE, "\r\n\r\n== Démonstration Robot CARY ==\r\n");
+//	uart_write(h_shell->print_buffer, size);
 
 	h_shell->sem_uart_read = xSemaphoreCreateBinary();
 	if (h_shell->sem_uart_read == NULL)
@@ -117,8 +117,10 @@ static int shell_exec(char * buf,h_shell_t *h_shell) {
 	return -1;
 }
 
-static char backspace[] = "\b \b";
-static char prompt[] = "> ";
+//static char backspace[] = "\b \b";
+static char backspace[] = "";
+//static char prompt[] = "> ";
+static char prompt[] = "";
 
 int shell_run(h_shell_t *h_shell) {
 	int reading = 0;

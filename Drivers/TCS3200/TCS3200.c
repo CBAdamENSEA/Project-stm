@@ -18,6 +18,8 @@ extern UART_HandleTypeDef huart3;
 char display_msg[100];
 extern uint32_t freq;
 extern uint8_t check_freq;
+char r_msg[10];
+char gr_msg[10];
 
 uint8_t TCS3200_Enable(TCS3200_state_enable_t state_enable)
 {
@@ -182,12 +184,18 @@ void TCS3200_Detected_Color(color_sensor_t *color_sensor)
 	if (color_sensor->red>30000)
 	{
 		color_sensor->output=1;
-		printf("RED\r\n");
+//		printf("RED\r\n");
+		sprintf(r_msg,"RRRRRp");
+		//vTaskDelay(100);
+		HAL_UART_Transmit(&huart2, r_msg, 6, 0xFFFF);
 	}
 	else
 	{
 		color_sensor->output=0;
-		printf("GREEN\r\n");
+//		printf("GREEN\r\n");
+		sprintf(gr_msg,"GGGGGp");
+		//vTaskDelay(100);
+		HAL_UART_Transmit(&huart2, gr_msg, 6, 0xFFFF);
 	}
 
 }

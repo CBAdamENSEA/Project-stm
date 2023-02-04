@@ -113,6 +113,13 @@ uint16_t distance_gauche;
 encoders_t encoders;
 color_sensor_t color_sensor;
 bords_t bords;
+char x_msg[10];
+
+char y_msg[10];
+char g_msg[10];
+char o_msg[10];
+char c_msg[10];
+int g_angle=0;
 
 int tof_count=0;
 /* USER CODE END PV */
@@ -579,15 +586,15 @@ void task_shell(void * unused)
 	shell_init(&h_shell);
 	if (init_servo(&servo))
 	{
-		printf("Servo initialized\r\n");
+		//		printf("Servo initialized\r\n");
 	}
 	if (init_motors(&motors))
 	{
-		printf("motors initialized\r\n");
+		//		printf("motors initialized\r\n");
 	}
 	if (TCS3200_Init(&color_sensor))
 	{
-		printf("Color sensor initialized\r\n");
+		//		printf("Color sensor initialized\r\n");
 	}
 
 
@@ -619,7 +626,7 @@ void task_encoder(void * unused)
 {
 	if (init_encoders(&encoders))
 	{
-		printf("Encoders Initialized\r\n");
+		//		printf("Encoders Initialized\r\n");
 	}
 	while (1)
 	{
@@ -683,6 +690,19 @@ void task_angle(void * unused)
 		{
 			xSemaphoreGive(encoders.sem_angle_check);
 		}
+		g_angle=(int)encoders.angle+270%360;
+		if (g_angle<0)
+		{
+			g_angle+=360;
+		}
+
+		if (g_angle>=100)
+			sprintf(g_msg,"g0%dp",g_angle);
+		else if (g_angle>=10)
+			sprintf(g_msg,"g00%dp",g_angle);
+		else
+			sprintf(g_msg,"g000%dp",g_angle);
+		HAL_UART_Transmit(&huart2, g_msg, 6, 0xFFFF);
 		vTaskDelay(10);
 	}
 }
@@ -701,6 +721,26 @@ void task_distance(void * unused)
 		{
 			xSemaphoreGive(encoders.sem_distance_check);
 		}
+		if (encoders.x>=1000)
+			sprintf(x_msg,"x%dp",encoders.x);
+		else if (encoders.x>=100)
+			sprintf(x_msg,"x0%dp",encoders.x);
+		else if (encoders.x>=10)
+			sprintf(x_msg,"x00%dp",encoders.x);
+		else
+			sprintf(x_msg,"x000%dp",encoders.x);
+		HAL_UART_Transmit(&huart2, x_msg, 6, 0xFFFF);
+
+		if (encoders.y>=1000)
+			sprintf(y_msg,"y%dp",encoders.y);
+		else if (encoders.y>=100)
+			sprintf(y_msg,"y0%dp",encoders.y);
+		else if (encoders.y>=10)
+			sprintf(y_msg,"y00%dp",encoders.y);
+		else
+			sprintf(y_msg,"y000%dp",encoders.y);
+		HAL_UART_Transmit(&huart2, y_msg, 6, 0xFFFF);
+
 
 		vTaskDelay(10);
 	}
@@ -735,10 +775,11 @@ void task_tof(void *unused)
 void task_searching(void * unused)
 {
 	double pas=5.0;
-	int angle=0;
+	double angle=0.0;
 	int cmpt=0;
 	int on=1;
 	int on_stop=1;
+	double angle_total=0;
 	uint16_t position=350;
 	uint16_t final_position=0;
 	uint16_t error=10;
@@ -751,24 +792,83 @@ void task_searching(void * unused)
 	uint8_t close=0;
 	uint8_t back=0;
 	uint8_t color=0;
+	uint8_t open2=0;
+	uint8_t recule=0;
+	uint8_t close2=0;
+	uint8_t backhome=0;
+	uint8_t angle0=0;
+	uint8_t rouge=0;
+	double old_angle=0.0;
+	int x_r=100;
+	int y_r=450;
+	int x_v=100;
+	int y_v=150;
+
 
 	while(1)
 	{
 
 		ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
+
+		//		if (encoders.x>=1000)
+		//			sprintf(x_msg,"x%dp",encoders.x);
+		//		else if (encoders.x>=100)
+		//			sprintf(x_msg,"x0%dp",encoders.x);
+		//		else if (encoders.x>=10)
+		//			sprintf(x_msg,"x00%dp",encoders.x);
+		//		else
+		//			sprintf(x_msg,"x000%dp",encoders.x);
+		//		HAL_UART_Transmit(&huart2, x_msg, 6, 0xFFFF);
+		//
+		//		if (encoders.y>=1000)
+		//			sprintf(y_msg,"y%dp",encoders.y);
+		//		else if (encoders.y>=100)
+		//			sprintf(y_msg,"y0%dp",encoders.y);
+		//		else if (encoders.y>=10)
+		//			sprintf(y_msg,"y00%dp",encoders.y);
+		//		else
+		//			sprintf(y_msg,"y000%dp",encoders.y);
+		//		HAL_UART_Transmit(&huart2, y_msg, 6, 0xFFFF);
+
+
+		//		g_angle=(int)encoders.angle+270%360;
+		//		if (g_angle<0)
+		//		{
+		//			g_angle+=360;
+		//		}
+		//
+		//		if (g_angle>=100)
+		//			sprintf(g_msg,"g0%dp",g_angle);
+		//		else if (g_angle>=10)
+		//			sprintf(g_msg,"g00%dp",g_angle);
+		//		else
+		//			sprintf(g_msg,"g000%dp",g_angle);
+		//		HAL_UART_Transmit(&huart2, g_msg, 6, 0xFFFF);
+
+
 		if (tofs.distance==0)
 		{
 
 		}
+		else if((abs(encoders.angle-old_angle)>(335-1))&(detected==0))
+		{
+			command_distance(&encoders,400);
+			old_angle=encoders.angle;
+
+		}
 		else if ((tofs.right.distance>500)&(detected==0)) // Il faut ajouter l'avancement si on arrive à 360°
 		{
-			printf("searching\r\n");
+			//			printf("searching\r\n");
 			command_angle(&encoders,pas);
+
 		}
+
 		else if ((tofs.distance<500)&(detected==0))
 		{
-			printf("Detected\r\n");
+			//			printf("Detected\r\n");
 			detected=1;
+			if(tofs.right.distance>500)
+				detected=0;
 
 		}
 		//		else if ((detected)&(approche==0))
@@ -778,28 +878,48 @@ void task_searching(void * unused)
 		//		}
 		else if ((detected)&(positioning==0))
 		{
-			printf("Positioning 1\r\n");
-			if (abs(tofs.left.distance-tofs.right.distance)<100)
+
+			//			printf("Positioning 1\r\n");
+			angle=pas;
+			if((tofs.right.distance>8000)&(tofs.left.distance>8000))
+			{
+				angle=-angle;
+			}
+			else if (abs(tofs.left.distance-tofs.right.distance)<80)
 			{
 				positioning=1;
+				angle=0.0;
 
 				//command_angle(&encoders,pas);
 			}
+			else if((tofs.left.distance>tofs.right.distance)&(tofs.left.distance>8000))
+			{
+				angle=pas;
 
-			else if (tofs.left.distance>tofs.right.distance)
+			}
+			else if((tofs.left.distance<tofs.right.distance)&(tofs.right.distance>8000))
+			{
+				angle=-pas;
 				command_angle(&encoders,-pas);
+			}
+			else if (tofs.left.distance>tofs.right.distance)
+				angle=-pas;
 			else if (tofs.left.distance<tofs.right.distance)
-				command_angle(&encoders,pas);
+				angle=pas;
+			command_angle(&encoders,angle);
 		}
 		else if ((positioning==1)&(approche==0))
 		{
-			printf("Approaching\r\n");
-			command_distance(&encoders,tofs.distance-200);
+			//			printf("Getting close\r\n");
+			command_distance(&encoders,tofs.distance-150);
 			approche=1;
 		}
 		else if ((approche)&(open==0))
 		{
-			printf("Opening\r\n");
+			//			printf("Opening\r\n");
+			sprintf(o_msg,"ooooop");
+			//vTaskDelay(100);
+			HAL_UART_Transmit(&huart2, o_msg, 6, 0xFFFF);
 			XL_320_set_goal_position(&servo,0x01, final_position);
 			while (abs(position-final_position)<error)
 			{
@@ -809,8 +929,8 @@ void task_searching(void * unused)
 		}
 		else if ((open)&(positioning2==0))
 		{
-			printf("Positioning 2\r\n");
-			if (abs(tofs.left.distance-tofs.right.distance)<50)
+			//			printf("Positioning 2\r\n");
+			if (abs(tofs.left.distance-tofs.right.distance)<40)
 				positioning2=1;
 			else if (tofs.left.distance>tofs.right.distance)
 				command_angle(&encoders,-pas/2);
@@ -819,13 +939,16 @@ void task_searching(void * unused)
 		}
 		else if ((positioning2)&(catching==0))
 		{
-			printf("Catching\r\n");
-			command_distance(&encoders,tofs.distance+20);
+			//			printf("Catching\r\n");
+			command_distance(&encoders,tofs.distance+30);
 			catching=1;
 		}
 		else if ((catching)&(close==0))
 		{
-			printf("Closing\r\n");
+			//			printf("Closing\r\n");
+			sprintf(c_msg,"cccccp");
+			//vTaskDelay(100);
+			HAL_UART_Transmit(&huart2, c_msg, 6, 0xFFFF);
 			position=0;
 			final_position=350;
 			XL_320_set_goal_position(&servo,0x01, final_position);
@@ -838,7 +961,8 @@ void task_searching(void * unused)
 		}
 		else if ((close)&(color==0))
 		{
-			//vTaskDelay(1000);
+			vTaskDelay(1500);
+			//			printf("Color Detection\r\n");
 			color=1;
 			//			xSemaphoreGive(color_sensor.sem_color_read);
 			//			xSemaphoreTake(color_sensor.sem_color_done, portMAX_DELAY);
@@ -846,19 +970,97 @@ void task_searching(void * unused)
 			if(TCS3200_Read_Color(&color_sensor,FILTER_RED))
 			{
 				TCS3200_Detected_Color(&color_sensor);
+				rouge=color_sensor.output;
 				//printf("red color is : %d\r\n", color_sensor.red);
 			}
 
 		}
 		else if ((color)&(back==0))
 		{
-			printf("Going back\r\n");
+			//			printf("Getting there\r\n");
 			back=1;
-			command_cartesien(0, 0, &encoders);
+			if (rouge)
+				command_cartesien(x_r, y_r, &encoders); //  Zone de rangement Rouge
+			else
+				command_cartesien(x_v, y_v, &encoders); //  Zone de rangement Vert
+			//command_angle(&encoders,-pas/2); // il faut calculer l'angle en fonction de -encoders.angle%360
 		}
 
-		printf("left=%d , right=%d, distance=%d\r\n",tofs.left.distance,tofs.right.distance,tofs.distance);
-		//vTaskDelay(500);
+		else if ((back)&(open2==0))
+		{
+			//			printf("Opening\r\n");
+			printf("oooo\r\n");
+			position=350;
+			final_position=0;
+			XL_320_set_goal_position(&servo,0x01, final_position);
+			while (abs(position-final_position)<error)
+			{
+				position=XL_320_read_present_position(&servo,0x01);
+			}
+			open2 =1;
+		}
+		else if ((open2)&(recule==0))
+		{
+
+			command_distance(&encoders,-200);
+			recule=1;
+		}
+
+		else if ((recule)&(close2==0))
+		{
+			//			printf("Closing\r\n");
+			printf("cccc\r\n");
+			position=0;
+			final_position=350;
+			XL_320_set_goal_position(&servo,0x01, final_position);
+			while (abs(position-final_position)<error)
+			{
+				position=XL_320_read_present_position(&servo,0x01);
+			}
+			close2=1;
+		}
+		else if ((close2)&(backhome==0))
+		{
+			//			printf("Going back home\r\n");
+			command_cartesien(200, 300, &encoders);
+			backhome=1;
+		}
+		else if ((backhome)&(angle0==0))
+		{
+			if (encoders.angle>0.0)
+				command_angle(&encoders,(int)(-encoders.angle+15)%360);
+			else
+				command_angle(&encoders,(int)(encoders.angle-15)%360);
+
+			angle0=1;
+		}
+		if (angle0)
+		{
+			detected=0;
+			approche=0;
+			positioning=0;
+			positioning2=0;
+			open=0;
+			catching=0;
+			close=0;
+			back=0;
+			color=0;
+			open2=0;
+			recule=0;
+			close2=0;
+			backhome=0;
+			angle0=0;
+			rouge=0;
+			old_angle=0.0;
+			position=350;
+			final_position=0;
+		}
+
+
+
+		//		printf("left=%d , right=%d, distance=%d\r\n",tofs.left.distance,tofs.right.distance,tofs.distance);
+		//		printf("angle=%d\r\n",(int)encoders.angle);
+
 
 		xTaskNotifyGive( h_task_tof );
 
@@ -924,7 +1126,7 @@ int main(void)
 	HAL_Delay(5000);
 	if (initVXL_tofs(&tofs))
 	{
-		printf("tofs Initialized\r\n");
+		//		printf("tofs Initialized\r\n");
 	}
 
 	//	char msg_blue[50];
@@ -1002,11 +1204,11 @@ int main(void)
 		printf("Error creating task shell\r\n");
 		Error_Handler();
 	}
-//	if (xTaskCreate(task_color, "Color", TASK_COLOR_STACK_DEPTH, NULL, TASK_COLOR_PRIORITY, &h_task_color) != pdPASS)
-//	{
-//		printf("Error creating task color\r\n");
-//		Error_Handler();
-//	}
+	//	if (xTaskCreate(task_color, "Color", TASK_COLOR_STACK_DEPTH, NULL, TASK_COLOR_PRIORITY, &h_task_color) != pdPASS)
+	//	{
+	//		printf("Error creating task color\r\n");
+	//		Error_Handler();
+	//	}
 	if (xTaskCreate(task_tof, "TOF", TASK_TOF_STACK_DEPTH, NULL, TASK_TOF_PRIORITY, &h_task_tof) != pdPASS)
 	{
 		printf("Error creating task TOF\r\n");

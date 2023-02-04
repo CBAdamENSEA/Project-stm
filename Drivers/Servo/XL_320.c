@@ -462,7 +462,7 @@ uint8_t init_servo(servo_t* servo)
 				if (XL_320_set_goal_position(servo, 0x01, servo->position))
 				{
 					//printf ("initial position = 350\r\n");
-					printf("Servo motor is initialized\r\n");
+//					printf("Servo motor is initialized\r\n");
 					return 1;
 				}
 			}

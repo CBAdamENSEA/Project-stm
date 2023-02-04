@@ -432,7 +432,7 @@ bool setMeasurementTimingBudget(uint32_t budget_us,uint8_t tof_chosen)
 
 	uint32_t const MinTimingBudget = 20000;
 
-	if (budget_us < MinTimingBudget) { return false; }
+	if (budget_us < MinTimingBudget) {budget_us=MinTimingBudget; }
 
 	uint32_t used_budget_us = StartOverhead + EndOverhead;
 
@@ -957,7 +957,8 @@ uint8_t initVXL_right()
 	setSignalRateLimit(20,tof_chosen);
 	setVcselPulsePeriod(VcselPeriodPreRange, 10,tof_chosen);
 	setVcselPulsePeriod(VcselPeriodFinalRange, 14,tof_chosen);
-	setMeasurementTimingBudget(300 * 1000UL,tof_chosen);
+	//startContinuous(0,tof_chosen);
+	setMeasurementTimingBudget(300000,tof_chosen);
 	return 0;
 
 }
@@ -968,7 +969,8 @@ uint8_t initVXL_left()
 	setSignalRateLimit(20,tof_chosen);
 	setVcselPulsePeriod(VcselPeriodPreRange, 10,tof_chosen);
 	setVcselPulsePeriod(VcselPeriodFinalRange, 14,tof_chosen);
-	setMeasurementTimingBudget(300 * 1000UL,tof_chosen);
+	setMeasurementTimingBudget(300000,tof_chosen);
+	//startContinuous(0,tof_chosen);
 	return 0;
 
 
